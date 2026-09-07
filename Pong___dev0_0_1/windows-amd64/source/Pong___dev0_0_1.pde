@@ -1,42 +1,23 @@
 float spieler1_x = 20, spieler1_y = 250, spieler2_x = 780, spieler2_y = 250, w_spieler = 20, h_spieler = 100, s_spieler = 6,
 ball_x = 400, ball_y = 300, ball_geschwindigkeit_x = -4, ball_geschwindigkeit_y = 0, w_ball = 10, h_ball = 10, p_ball_x = 400, p_ball_y = 300, p_ball_geschwindigkeit_x = -4, p_ball_geschwindigkeit_y = 0,
 b_top = 50, b_bottom = 550, faktor = 0.1;
-float[][] positions_array;
 
-int punkte1 = 0, punkte2 = 0, range = 55, blur_anzahl = 10;
+int punkte1 = 0, punkte2 = 0, frame_width = 800, frame_height = 600, range = 55;
 
 boolean keyW = false, keyS = false, keyUP = false, keyDOWN = false;
 
 void setup(){
-  positions_array = new float[blur_anzahl][2];
-  size(800, 600);
+  size(frame_width, frame_height);
   rectMode(CENTER);
-  // noStroke();
 }
 void draw(){
   // Setz den Hintergrund auf Schwarz und entfernt die Spieler und den Ball falls vorhanden
   background(0);
+  
   // Erschaft die Spielelemente, auf Basis der Wertezuweisungen
-  fill(255, 0, 0);
   rect(spieler1_x, spieler1_y, w_spieler, h_spieler);
-  fill(0, 0, 255);
   rect(spieler2_x, spieler2_y, w_spieler, h_spieler);
-  fill(0, 255, 0);
   rect(ball_x, ball_y, w_ball, h_ball);
-  
-  
-  // Blur-Effekt
-  for(int i = (blur_anzahl - 1); i > 0; i--){
-    fill(0, 255, 0, 255/(i*2));
-    positions_array[i][0] = positions_array[i-1][0];
-    positions_array[i][1] = positions_array[i-1][1];
-    rect(positions_array[i][0], positions_array[i][1], w_ball, h_ball);
-  }
-  
-  positions_array[0][0] = ball_x;
-  positions_array[0][1] = ball_y;
-    
-  fill(255, 255, 255);
   
   // Überprüfung der Eingaben
   if(keyS){
