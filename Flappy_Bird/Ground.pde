@@ -8,6 +8,8 @@ class Ground{
   float ground1_x = 0;
   float ground2_x = width;
   
+  float ground_y = 286;
+  
   Ground(float pos_x){
     ground1 = loadImage(image_path);
     ground2 = loadImage(image_path);
@@ -15,8 +17,8 @@ class Ground{
   }
   
   void grounding(){
-    image(ground1, ground1_x + pos_x, 246);
-    image(ground2, ground2_x + pos_x, 246);
+    image(ground1, ground1_x + pos_x, ground_y);
+    image(ground2, ground2_x + pos_x, ground_y);
   }
   void act(){
      ground1_x -= speed;

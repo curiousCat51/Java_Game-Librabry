@@ -1,6 +1,7 @@
 ArrayList<Ground> Gd;
 ArrayList<Background> Bd;
 ArrayList<Spike> Se;
+ArrayList<Bird> B;
 
 // Speed of the game
 float speed = 1;
@@ -19,6 +20,17 @@ int points = 0;
 // Distance between the upper and lower spike parts
 float distance = 100;
 
+// Number of the current bird image
+int b_state = 1;
+int b_state_count = 1;
+
+// Key input detect
+boolean kSpace = false;
+
+
+int counter = 0;
+
+
 void setup(){
   Se = new ArrayList<Spike>();
   Bd = new ArrayList<Background>();
@@ -31,34 +43,67 @@ void setup(){
   Gd.add(new Ground(384));
   Gd.add(new Ground(512));
   Gd.add(new Ground(640));
+  B = new ArrayList<Bird>();
+  B.add(new Bird(0));
+  B.add(new Bird(1));
+  B.add(new Bird(2));
+  B.add(new Bird(3));
   size(640, 304); 
 }
 
 void draw(){
-  background(173, 216, 250);
+  background(0);
   
-  if(spike_count <= spike_max && time == timer){
-    Se.add(new Spike(distance));
-    spike_count++;
-    timer = 0;
+  Frame();
+  
+  ScoreBoard();
+  
+  background(0);
+  
+  Frame();
+  
+  ScoreBoard();
+  
+  delay(20);
+}
+
+void keyPressed(){
+  if(keyCode == ' '){
+    kSpace = true;
   }
-  
-  if(timer < time){
-    timer++;
+}
+
+void keyReleased(){
+  if(keyCode == ' '){
+    kSpace = false;
   }
-  
+}
+
+void BackgroundMove(){
   for(int i = 0; i < Bd.size(); i++){
     Background b = Bd.get(i);
     b.drawing();
     b.act();
   }
-  
+}
+
+void GroundMove(){
   for(int i = 0; i < Gd.size(); i++){
     Ground g = Gd.get(i);
     g.grounding();
     g.act();
   }
-  
+}
+
+void SpikeAdd(){
+  if(spike_count <= spike_max && time == timer){
+    Se.add(new Spike(distance));
+    spike_count++;
+    timer = 0;
+  }
+}
+
+void SpikeMoveAndRemove(){
   for(int i = 0; i < Se.size(); i++){
     Spike s = Se.get(i);
     s.spiking();
@@ -85,12 +130,65 @@ void draw(){
       distance = (100 - (distance / 2));
     }
   }
+}
+
+void TimeAndTimer(){
+  if(timer < time){
+    timer++;
+  }
+  
   
   if(timer > time){
     Se.add(new Spike(distance));
     spike_count++;
     timer = 0;
   }
+}
+
+void BirdState(){
+  if(b_state_count == 1){
+    if(b_state <= 2){
+      b_state++;
+    }
+    else{
+      b_state = 1;
+    }
+    b_state_count++;
+  }
+  else if(b_state_count == 2){
+    b_state_count++;
+  }
+  else{
+    b_state_count = 1;
+  }
+}
+
+void BirdAction(){
+  if(kSpace){
+    B.get(b_state).fly();
+    counter++;
+  }
+  else{
+    B.get(b_state).fall();
+  }
+}
+
+void ScoreBoard(){
+  text("Punkte: " + points, 550, 20);
+  text("Klicks: " + counter, 550, 40);
+}
+
+void Frame(){
+  BackgroundMove();
   
-  text("Points: " + points, 550, 20);
+  GroundMove();
+  
+  SpikeAdd();
+  
+  TimeAndTimer();
+  
+  SpikeMoveAndRemove();
+  
+  B.get(b_state).birding();
+  BirdAction();
 }
