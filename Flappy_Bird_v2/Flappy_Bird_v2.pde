@@ -73,13 +73,12 @@ void draw() {
   background(0);      
   Frame();       
   
-  // Textanzeigen (Spikes und Klicks auskommentiert, Punkte zentriert)
   fill(255);
   textSize(24);
   textAlign(CENTER, TOP);
   // text("Spikes: " + spike_count, 550, 20);   
   // text("Klicks: " + counter, 550, 40);   
-  text("Punkte: " + points, width_h, 20); // Zeigt nur noch die Punkte oben in der Mitte an
+  text("Punkte: " + points, width_h, 20);
 }  
 
 // ==========================================
