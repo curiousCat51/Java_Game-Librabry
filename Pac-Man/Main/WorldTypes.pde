@@ -1,3 +1,3 @@
 enum WorldTypes{
- PLAYER, ENEMY, WALL
+ PLAYER, ENEMY, WALL, DOT, FRUIT
 }
