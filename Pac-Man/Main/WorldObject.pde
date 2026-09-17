@@ -37,4 +37,7 @@ class WorldObject{
   WorldTypes getType(){
     return type;
   }
+  
+  void setPixelX(float pixel_x){this.pixel_x = pixel_x;}
+  void setPixelY(float pixel_y){this.pixel_y = pixel_y;}
 }
