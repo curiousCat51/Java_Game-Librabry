@@ -14,20 +14,18 @@ class Player extends Creature{
   
   void move(){
     if(EventListener.getKeyUP()){
-      update(0, 1, CreatureDirections.HOCH, image_left);
+      move(0, -(TILE_SIZE/SCALE), CreatureDirections.HOCH, image_left, PLAYER_SPEED);
     }
     if(EventListener.getKeyDOWN()){
-      update(0, -1, CreatureDirections.RUNTER, image_right);
+      move(0, TILE_SIZE/SCALE, CreatureDirections.RUNTER, image_right, PLAYER_SPEED);
     }
     if(EventListener.getKeyLEFT()){
-      update(-1, 0, CreatureDirections.LINKS, image_left);
+      move(-(TILE_SIZE/SCALE), 0, CreatureDirections.LINKS, image_left, PLAYER_SPEED);
     }
     if(EventListener.getKeyRIGHT()){
-      update(1, 0, CreatureDirections.RECHTS, image_right);
+      move(TILE_SIZE/SCALE, 0, CreatureDirections.RECHTS, image_right, PLAYER_SPEED);
     }
-  }
-  void update(float pixel_x, float pixel_y, CreatureDirections direction, AnimationImage image){
-    changeDirection(direction);
-    update(pixel_x, pixel_y, WorldTypes.PLAYER, image, PLAYER_SPEED);
+    
+    // TODO replace a maploaded tile with the player if not a wall or enemy
   }
 }
