@@ -9,8 +9,8 @@ float SCALE = 2;
 float TILE_SIZE = 16 * SCALE;
 
 // Geschwindigkeit der Beweglichen Entitäten
-float PLAYER_SPEED = 1.0f * SCALE; // Wieder auf 0.7f setzen
-float ENEMY_SPEED = 1.0f * SCALE; // Wieder auf 0.7f setzen
+float PLAYER_SPEED = 0.7f * SCALE; // Wieder auf 0.7f setzen
+float ENEMY_SPEED = 0.8f * SCALE; // Wieder auf 0.8f setzen
 
 // Geschwindigkeit von Animationen
 float ANIMATION_SPEED = 0.1f;
@@ -50,7 +50,7 @@ void draw(){
    object.drawObject();
    if(object instanceof Enemy){
      Enemy e = (Enemy) object;
-     e.move(e.randomDirection());
+     e.move();
      e.display();
    }
   }

@@ -1,6 +1,11 @@
 class Player extends Creature{
   AnimationImage image_right;
   AnimationImage image_left;
+  CollisionResult collision = new CollisionResult();
+  
+  float[] position = {
+    0, 1, -1
+  };
 
   
   Player(float grid_x, float grid_y, float speed){
@@ -10,20 +15,26 @@ class Player extends Creature{
     setImageContainer(image_left);
     this.grid_x = grid_x;
     this.grid_y = grid_y;
+    
+    
+    collision.setCollisionFilter(WorldTypes.WALL);
   }
   
   void move(){
     if(EventListener.getKeyUP()){
-      move(0, -(TILE_SIZE/SCALE), CreatureDirections.HOCH, image_left, PLAYER_SPEED);
+      move(position[0], position[2], CreatureDirections.HOCH, image_left, PLAYER_SPEED);
     }
+    
     if(EventListener.getKeyDOWN()){
-      move(0, TILE_SIZE/SCALE, CreatureDirections.RUNTER, image_right, PLAYER_SPEED);
+      move(position[0], position[1], CreatureDirections.RUNTER, image_right, PLAYER_SPEED);
     }
+    
     if(EventListener.getKeyLEFT()){
-      move(-(TILE_SIZE/SCALE), 0, CreatureDirections.LINKS, image_left, PLAYER_SPEED);
+      move(position[2], position[0], CreatureDirections.LINKS, image_left, PLAYER_SPEED);
     }
+    
     if(EventListener.getKeyRIGHT()){
-      move(TILE_SIZE/SCALE, 0, CreatureDirections.RECHTS, image_right, PLAYER_SPEED);
+      move(position[1], position[0], CreatureDirections.RECHTS, image_right, PLAYER_SPEED);
     }
     
     // TODO replace a maploaded tile with the player if not a wall or enemy

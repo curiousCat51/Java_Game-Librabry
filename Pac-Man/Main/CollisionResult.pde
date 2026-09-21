@@ -1,27 +1,21 @@
 class CollisionResult{
-  WorldTypes[] collision_filter;
-  boolean success = false;
+  WorldTypes collision_filter;
   
   CollisionResult(){
+  }
+  
+  void setCollisionFilter(WorldTypes filter){
+    collision_filter = filter;
   }
   
   boolean checkCollision(float move_x, float move_y){
     for( WorldObject object: world_objects){
       if(object.getPixelX() == move_x && object.getPixelY() == move_y){
-        for(int i = 0; i < collision_filter.length; i++){
-          if(object.getType() != collision_filter[i]){
-            success = true;
-          }
+        if(object.getType() == collision_filter){
+            return false;
         }
       }
     }
-    
-    return success;
-  }
-  
-  void setCollisionFilter(WorldTypes[] collision_filter){
-    for(int i = 0; i < collision_filter.length; i++){
-     this.collision_filter[i] = collision_filter[i]; 
-    }
+    return true;
   }
 }
