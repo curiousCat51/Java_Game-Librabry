@@ -44,13 +44,21 @@ class Enemy extends Creature{
     collision.setCollisionFilter(WorldTypes.WALL);
     
     this.gType = gType;
+    
+    //println("Ghost spawned at grid: " + grid_x + ", " + grid_y);
+    //println("Ghost spawned at pixel: " + getPixelX() + ", " + getPixelY());
   }
   
   void move(){
-    if(!canMove(direction)){
-      chooseDirection();
+    // Prüfen, ob die aktuelle Richtung blockiert ist
+    if(isAtTileCenter() && !canMove(direction)){
+      snapToTileCenter();
+      direction = chooseDirection();
+      
+      //println("New direction: " + direction);
     }
-    
+    println("Ghost position: " + getPixelX() + ", " + getPixelY());
+    // Bewegung anhand der aktuellen Richtung
     switch(direction){
       
       case RECHTS:{
@@ -72,83 +80,103 @@ class Enemy extends Creature{
     }
   }
   
-  void chooseDirection() {
+  boolean canMove(CreatureDirections dir) {
+
+    float x = 0;
+    float y = 0;
+
+    if (dir == CreatureDirections.RECHTS) x = 1;
+    if (dir == CreatureDirections.LINKS)   x = -1;
+    if (dir == CreatureDirections.HOCH)    y = -1;
+    if (dir == CreatureDirections.RUNTER)  y = 1;
+
+    return collision.checkCollision(getPixelX() + x * ENEMY_SPEED, getPixelY() + y * ENEMY_SPEED);
+  }
+  
+  boolean isAtTileCenter() {
+    float centerX = convertToPixel(convertToGrid(getPixelX()));
+    float centerY = convertToPixel(convertToGrid(getPixelY()));
+  
+    return abs(getPixelX() - centerX) < 2.0 &&
+           abs(getPixelY() - centerY) < 2.0;
+  }
+  
+  CreatureDirections chooseDirection() {
+    //println("Current: " + direction + " | Position: " + getPixelX() + ", " + getPixelY());
     
     Player player = null;
+    float smallestDistance = Float.MAX_VALUE;
+    CreatureDirections bestDirection = null;
+    boolean directionFound = false;
     
-    for(int i = 0; i < world_objects.size(); i++){
-      WorldObject object = (WorldObject) world_objects.get(i);
+    for(WorldObject object: world_objects){
       if(object instanceof Player){
         player = (Player) object;
         break;
       }
     }
-
-    if (player != null && random(1) < chaseProbability) {
-      chooseDirectionTowardsPlayer(player);
+    
+    if(player == null){
+      return this.direction;
     }
-    else {
-      chooseRandomDirection();
+    
+    for(CreatureDirections direction : CreatureDirections.values()){
+      
+      //println(direction + " | Can move: " + canMove(direction));
+      if(isAtTileCenter() && canMove(direction) && direction != oppositeDirection(this.direction)){
+        float[] position = calculatePotentialPosition(getPixelX(), getPixelY(), direction);
+        float distance = calculateDistance(position[0], player.getPixelX(), position[1], player.getPixelY());
+        
+        if(distance < smallestDistance){
+          smallestDistance = distance;
+          bestDirection = direction;
+          directionFound = true;
+        }
+      }
     }
-
-    ArrayList<CreatureDirections> possible =
-      new ArrayList<CreatureDirections>();
-
-    if (canMove(CreatureDirections.RECHTS))
-      possible.add(CreatureDirections.RECHTS);
-
-    if (canMove(CreatureDirections.LINKS))
-      possible.add(CreatureDirections.LINKS);
-
-    if (canMove(CreatureDirections.HOCH))
-      possible.add(CreatureDirections.HOCH);
-
-    if (canMove(CreatureDirections.RUNTER))
-      possible.add(CreatureDirections.RUNTER);
-
-    if (possible.size() == 0)
-      return;
-
-    direction = possible.get(
-      int(random(possible.size()))
-    );
+    if(!directionFound){
+      CreatureDirections opposite = oppositeDirection(this.direction);
+      
+      if(canMove(opposite)){
+        bestDirection = oppositeDirection(this.direction);
+      } 
+      else {
+        //println("WARNING: All directions blocked!");
+        bestDirection = this.direction;
+      }
+    }
+    
+    return bestDirection;
   }
   
-
+  float calculateDistance(float xGhost, float xTarget, float yGhost, float yTarget) {
+    return abs(xTarget - xGhost) + abs(yTarget - yGhost);
+  }
   
-  void chooseDirectionTowardsPlayer(Player player) {
-
-    float dx = player.getPixelX() - getPixelX();
-    float dy = player.getPixelY() - getPixelY();
+  float[] calculatePotentialPosition(float x, float y, CreatureDirections direction) {
+    float nextX = x;
+    float nextY = y;
   
-    if (abs(dx) > abs(dy)) {
+    switch (direction) {
+      case RECHTS:
+        nextX += ENEMY_SPEED;
+        break;
   
-      if (dx > 0 && canMove(CreatureDirections.RECHTS)) {
-        direction = CreatureDirections.RECHTS;
-        return;
-      }
+      case LINKS:
+        nextX -= ENEMY_SPEED;
+        break;
   
-      if (dx < 0 && canMove(CreatureDirections.LINKS)) {
-        direction = CreatureDirections.LINKS;
-        return;
-      }
+      case HOCH:
+        nextY -= ENEMY_SPEED;
+        break;
   
-    } else {
-  
-      if (dy > 0 && canMove(CreatureDirections.RUNTER)) {
-        direction = CreatureDirections.RUNTER;
-        return;
-      }
-  
-      if (dy < 0 && canMove(CreatureDirections.HOCH)) {
-        direction = CreatureDirections.HOCH;
-        return;
-      }
+      case RUNTER:
+        nextY += ENEMY_SPEED;
+        break;
     }
   
-    // Desired direction blocked → fall back to random
-    chooseDirection();
-}
+    return new float[]{nextX, nextY};
+  }
 
   CreatureDirections oppositeDirection(CreatureDirections dir) {
   
@@ -162,65 +190,6 @@ class Enemy extends Creature{
       return CreatureDirections.RUNTER;
   
     return CreatureDirections.HOCH;
-  }
-  
-  boolean canMove(CreatureDirections dir) {
-
-    float x = 0;
-    float y = 0;
-
-    if (dir == CreatureDirections.RECHTS) x = 1;
-    if (dir == CreatureDirections.LINKS)   x = -1;
-    if (dir == CreatureDirections.HOCH)    y = -1;
-    if (dir == CreatureDirections.RUNTER)  y = 1;
-
-    return collision.checkCollision(
-      getPixelX() + x * ENEMY_SPEED,
-      getPixelY() + y * ENEMY_SPEED
-    );
-  }
-
-  void chooseRandomDirection() {
-
-  ArrayList<CreatureDirections> possible =
-    new ArrayList<CreatureDirections>();
-
-  CreatureDirections opposite = oppositeDirection(direction);
-
-  if (direction != CreatureDirections.LINKS &&
-      canMove(CreatureDirections.RECHTS))
-    possible.add(CreatureDirections.RECHTS);
-
-  if (direction != CreatureDirections.RECHTS &&
-      canMove(CreatureDirections.LINKS))
-    possible.add(CreatureDirections.LINKS);
-
-  if (direction != CreatureDirections.RUNTER &&
-      canMove(CreatureDirections.HOCH))
-    possible.add(CreatureDirections.HOCH);
-
-  if (direction != CreatureDirections.HOCH &&
-      canMove(CreatureDirections.RUNTER))
-    possible.add(CreatureDirections.RUNTER);
-
-  if (possible.size() > 0) {
-    direction = possible.get(int(random(possible.size())));
-  }
-  else if (canMove(opposite)) {
-    direction = opposite;
-  }
-}
-
-  boolean isAtTileCenter(){
-    
-    float gridX = convertToGrid(getPixelX());
-    float gridY = convertToGrid(getPixelY());
-    
-    if(convertToPixel(gridX) == getPixelX() && convertToPixel(gridY) == getPixelY()){
-      return true;
-    }
-    
-    return false;
   }
   
   void display(){

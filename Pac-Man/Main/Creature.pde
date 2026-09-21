@@ -9,7 +9,7 @@ class Creature extends WorldObject {
   
   Creature(WorldTypes type, float grid_x, float grid_y, float speed){
    super(type, grid_x, grid_y);
-   direction = CreatureDirections.LINKS;
+   direction = CreatureDirections.RUNTER;
    this.speed = speed;
   }
   
@@ -33,5 +33,15 @@ class Creature extends WorldObject {
     setPixelY(pixel_y);
     setImageContainer(image); 
     direction = choosen;
+  }
+  
+  void snapToTileCenter() {
+    // Nächste Rasterposition berechnen
+    float centerX = convertToPixel(convertToGrid(getPixelX()));
+    float centerY = convertToPixel(convertToGrid(getPixelY()));
+  
+    // Position am Raster ausrichten
+    setPixelX(centerX);
+    setPixelY(centerY);
   }
 }
