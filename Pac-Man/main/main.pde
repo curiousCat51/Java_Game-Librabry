@@ -21,6 +21,11 @@ ArrayList<WorldObject> world_objects;
 // Objekt zum handling von Eingaben 
 KeyHandler EventListener;
 
+// Dot Effekte
+int score = 0;
+boolean powerMode = false;
+int powerTimer = 0;
+
 // ==========================================
 // 2. SETUP (Initialisierung)
 // ==========================================
@@ -46,13 +51,34 @@ void draw(){
   background(0);
   // Darstellung jedes einzelnen Objektes
   for(int i = 0; i < world_objects.size(); i++){
-   WorldObject object = world_objects.get(i);
-   object.drawObject();
-   if(object instanceof Enemy){
-     Enemy e = (Enemy) object;
-     e.move();
-     e.display();
-   }
+
+    WorldObject object = world_objects.get(i);
+
+    object.drawObject();
+
+    if(object instanceof Enemy){
+
+        Enemy e = (Enemy) object;
+
+        e.move();
+        e.display();
+    }
+
+    if(object instanceof Player){
+
+        Player p = (Player) object;
+
+        p.move();
+        p.display();
+    }
+  }
+  if(powerMode){
+
+      powerTimer--;
+  
+      if(powerTimer <= 0){
+          powerMode = false;
+      }
   }
 }
 
@@ -64,15 +90,6 @@ void draw(){
 void keyPressed(){
   // ...wird die Eingabe gehandelt und...
   EventListener.Pressed();
-  
-  // ...der Spieler wird bewegt und überscchreibt das vorherige Objekt an dieser Position
-  for(int i = 0; i < world_objects.size(); i++){
-    WorldObject object = (WorldObject) world_objects.get(i);
-    if(object instanceof Player){
-      Player p = (Player) object;
-      p.move();
-    }
-  }
 }
 
 // Wenn eine Taste losgelassen wird,...

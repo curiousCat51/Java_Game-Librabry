@@ -3,7 +3,7 @@ class Fruits extends WorldObject{
  
  String iP = "data/images/Items/";
  
- Fruits(float grid_x, float grid_y, int fruit_type){
+ Fruits(int grid_x, int grid_y, int fruit_type){
   super(WorldTypes.FRUIT, grid_x, grid_y);
   
   if(fruit_type == 1){

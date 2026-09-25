@@ -4,7 +4,7 @@ class Wall extends WorldObject{
  String iP = "data/images/Walls/wall_";
  int wall_type;
  
- Wall(float grid_x, float grid_y, int wall_type, int version){
+ Wall(int grid_x, int grid_y, int wall_type, int version){
    super(WorldTypes.WALL, grid_x, grid_y);
    
    if(wall_type == 1){
