@@ -15,6 +15,7 @@ class Enemy extends Creature{
   
   String iP = "data/images/Ghosts/ghost_";
   int gType;
+  String pattern;
   
   float chaseProbability;
 
@@ -22,22 +23,23 @@ class Enemy extends Creature{
     super(WorldTypes.ENEMY, grid_x, grid_y, speed);
     
     if(gType == 1){
-      // Inky
+      // Inky bewegt sich zufällig
       iP = iP + "cyan_walk_";
       chaseProbability = 0.25;
+      
     }
     else if(gType == 2){
-      // Clyde
+      // Clyde berechnet komplexe Positionen
       iP = iP + "orange_walk_";
       chaseProbability = 0.15;
     }
     else if(gType == 3){
-      // Pinky
+      // Pinky schneidet Wege ab
       iP = iP + "pink_walk_";
       chaseProbability = 0.40;
     }
     else{
-      // Blinky
+      // Blinky jagt direkt
       iP = iP + "red_walk_";
       chaseProbability = 0.60;
     }
@@ -310,28 +312,31 @@ class Enemy extends Creature{
     
     Player player = null;
     
-    for(WorldObject object : world_objects){
-      if(object instanceof Player){
-        player = (Player) object;
-        break;
+
+     for(WorldObject object : world_objects){
+       if(object instanceof Player){
+         player = (Player) object;
+         break;
       }
-    }
-    
+     }
+  
     if(player == null){
       return null;
     }
-    
+          
     toVisit.clear();
     visited.clear();
-    
+          
     int[] position = getPosition();
-
+      
     GridPosition start = new GridPosition(position[0], position[1]);
-    
+          
     toVisit.add(start);
-  
+        
     int targetX = player.getGridX();
     int targetY = player.getGridY();
+    
+    
     
      while(!toVisit.isEmpty()){
        GridPosition found = visit(targetX, targetY);

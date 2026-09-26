@@ -109,6 +109,8 @@ class Player extends Creature{
           }
       }
   }
+  
+  CreatureDirections getWishDirection(){return this.wish_direction;}
     // TODO replace a maploaded tile with the player if not a wall or enemy
   
 }
