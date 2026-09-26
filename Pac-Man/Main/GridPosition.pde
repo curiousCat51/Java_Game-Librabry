@@ -12,4 +12,7 @@ class GridPosition{
   boolean isSamePosition(GridPosition position){
     return x == position.x && y == position.y;
   }
+  
+  int getX(){return x;}
+  int getY(){return y;}
 }

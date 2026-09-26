@@ -22,18 +22,22 @@ class Enemy extends Creature{
     super(WorldTypes.ENEMY, grid_x, grid_y, speed);
     
     if(gType == 1){
+      // Inky
       iP = iP + "cyan_walk_";
       chaseProbability = 0.25;
     }
     else if(gType == 2){
+      // Clyde
       iP = iP + "orange_walk_";
       chaseProbability = 0.15;
     }
     else if(gType == 3){
+      // Pinky
       iP = iP + "pink_walk_";
       chaseProbability = 0.40;
     }
     else{
+      // Blinky
       iP = iP + "red_walk_";
       chaseProbability = 0.60;
     }
@@ -61,6 +65,9 @@ class Enemy extends Creature{
       if(isAtPlayer()){
           direction = CreatureDirections.NEUTRAL;
           return;
+      }
+      else{
+        direction = chooseDirection();
       }
   
       int position[] = getPosition();
@@ -150,11 +157,6 @@ class Enemy extends Creature{
     return this.direction;
   }
   
-  // Methode zur Berechnung der Entfernung nach der Manhattan-Metrik
-  int calculateDistance(int xGhost, int xTarget, int yGhost, int yTarget) {
-    return abs(xTarget - xGhost) + abs(yTarget - yGhost);
-  }
-  
   // Methode zur Berechnung der möglichen nächsten Position
   int[] calculatePotentialPosition(int x, int y, CreatureDirections direction) {  
     int nextXY[] = moveDic(direction);
@@ -192,7 +194,7 @@ class Enemy extends Creature{
         
         int position[] = wall.getPosition();
   
-        if(position[0] == gridX && position[1] == gridY){
+        if(position[0] == gridX && position[1] == gridY && !wall.isPassThrough()){
           return true;
         }
       }

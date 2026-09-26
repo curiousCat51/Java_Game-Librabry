@@ -2,6 +2,8 @@ class Creature extends WorldObject {
   CreatureDirections direction;
   CreatureDirections wish_direction;
   CollisionResult collision = new CollisionResult();
+  GridPosition border_left = new GridPosition(0, 13);
+  GridPosition border_right = new GridPosition(27, 13);
   int grid_x;
   int grid_y;
   
@@ -20,7 +22,7 @@ class Creature extends WorldObject {
   
   Creature(WorldTypes type, int grid_x, int grid_y, float speed){
    super(type, grid_x, grid_y);
-   direction = CreatureDirections.HOCH;
+   direction = CreatureDirections.NEUTRAL;
    wish_direction = CreatureDirections.NEUTRAL;
    
    moveSpeed = speed;
@@ -34,17 +36,18 @@ class Creature extends WorldObject {
   
   void move(CreatureDirections chosen, ImageContainer image){
 
-      int[] XY = moveDic(chosen);
+      
       int position[] = getPosition();
-  
-      int nextX = position[0] + XY[0];
-      int nextY = position[1] + XY[1];
+      GridPosition next;
+      
+      next = mapEndTP(position[0], position[1], chosen);      
+      
   
       if(canMove(chosen)){
   
           updateDirection(chosen, image);
   
-          startMovement(nextX, nextY);
+          startMovement(next.getX(), next.getY());
       }
   }
   
@@ -158,6 +161,31 @@ class Creature extends WorldObject {
   boolean isMoving(){
 
       return moveProgress < 1.0;
+  }
+  
+  // Teleport von einem zum anderen Ende der Karte
+  GridPosition mapEndTP(int pos_x, int pos_y, CreatureDirections chosen){
+    int[] XY = moveDic(chosen);
+    GridPosition new_pos;
+    
+    // (7, -1) (7, 29)
+    if(getType() == WorldTypes.PLAYER){
+      if(pos_x == border_left.getX() && pos_y == border_left.getY()){
+        new_pos = new GridPosition(border_right.getX() + XY[0], border_right.getY() + XY[1]);
+      }
+      else if(pos_x == border_right.getX() && pos_y == border_right.getY()){
+        new_pos = new GridPosition(border_left.getX() + XY[0], border_left.getY() + XY[1]);
+      }
+      else{
+        new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
+      }
+    }
+    else{
+      new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
+    }
+
+    
+    return new_pos;
   }
   
   // Methode zum Anzeigen des Geistes

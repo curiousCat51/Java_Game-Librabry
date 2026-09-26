@@ -16,11 +16,8 @@ class CollisionResult{
       if(object.getType() == collision_filter){
         Wall wall = (Wall) object;
         
-        if(wall.getWallType() == 0){
-          return true;
-        }
-        else{
-          
+        if(!wall.isPassThrough()){
+                 
           int[] position = wall.getPosition();
           int wall_x = position[0];
           int wall_y = position[1];
