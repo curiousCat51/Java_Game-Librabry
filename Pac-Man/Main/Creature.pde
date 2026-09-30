@@ -105,9 +105,7 @@ class Creature extends WorldObject {
   
               Player player = (Player) object;
   
-              if(position[0] == player.getGridX() &&
-                 position[1] == player.getGridY()){
-  
+              if(position[0] == player.getGridX() && position[1] == player.getGridY()){
                   return true;
               }
           }
@@ -188,7 +186,7 @@ class Creature extends WorldObject {
     return new_pos;
   }
   
-  // Methode zum Anzeigen des Geistes
+  // Methode zum Anzeigen der Creatur
   void display(){
     drawObject();
   }

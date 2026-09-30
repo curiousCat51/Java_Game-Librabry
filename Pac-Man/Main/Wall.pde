@@ -8,29 +8,37 @@ class Wall extends WorldObject{
  Wall(int grid_x, int grid_y, int wall_type, int version){
    super(WorldTypes.WALL, grid_x, grid_y);
    
-   if(wall_type == 1){
-     iP = iP + "connection";
-     pass_through = false;
-   }
-   else if(wall_type == 2){
-     iP = iP + "corner";
-     pass_through = false;
-   }
-   else if(wall_type == 3){
-     iP = iP + "cross";
-     pass_through = false;
-   }
-   else if(wall_type == 4){
-     iP = iP + "end";
-     pass_through = false;
-   }
-   else if(wall_type == 5){
-     iP = iP + "straight";
-     pass_through = false;
-   }
-   else if(wall_type == 6){
-     iP = iP + "door";
-     pass_through = true;
+   switch(wall_type){
+     case 1:{
+      iP = iP + "connection";
+      pass_through = false;
+      break;
+     }
+     case 2:{
+      iP = iP + "corner";
+      pass_through = false;
+      break; 
+     }
+     case 3:{
+      iP = iP + "cross";
+      pass_through = false;
+      break;
+     }
+     case 4:{
+      iP = iP + "end";
+      pass_through = false;
+      break;
+     }
+     case 5:{
+      iP = iP + "straight";
+      pass_through = false;
+      break;
+     }
+     case 6:{
+      iP = iP + "door";
+      pass_through = true;
+      break;
+     }
    }
    
    if(wall_type != 6 && version != 0){

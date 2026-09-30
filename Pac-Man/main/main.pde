@@ -9,8 +9,8 @@ float SCALE = 2;
 float TILE_SIZE = 16 * SCALE;
 
 // Geschwindigkeit der Beweglichen Entitäten
-float PLAYER_SPEED = 0.7f * SCALE; // Wieder auf 0.7f setzen
-float ENEMY_SPEED = 0.8f * SCALE; // Wieder auf 0.8f setzen
+float PLAYER_SPEED = 0.6f * SCALE; // Wieder auf 0.7f setzen
+float ENEMY_SPEED = 0.6f * SCALE; // Wieder auf 0.8f setzen
 
 // Geschwindigkeit von Animationen
 float ANIMATION_SPEED = 0.1f;
@@ -21,10 +21,15 @@ ArrayList<WorldObject> world_objects;
 // Objekt zum handling von Eingaben 
 KeyHandler EventListener;
 
-// Dot Effekte
+// Punkte
 int score = 0;
+
+// Dot Effekte
 boolean powerMode = false;
 int powerTimer = 0;
+
+// Leben des Spielers
+int lifes = 0;
 
 // ==========================================
 // 2. SETUP (Initialisierung)
@@ -54,8 +59,6 @@ void draw(){
 
     WorldObject object = world_objects.get(i);
 
-    object.drawObject();
-
     if(object instanceof Enemy){
 
         Enemy e = (Enemy) object;
@@ -63,23 +66,36 @@ void draw(){
         e.move();
         e.display();
     }
-
-    if(object instanceof Player){
+    else if(object instanceof Player){
 
         Player p = (Player) object;
 
         p.move();
         p.display();
     }
+    else if(object instanceof Life){
+      
+      Life life = (Life) object;
+      
+      life.display();
+    }
+    else {
+      object.drawObject();
+    }
   }
+  
   if(powerMode){
 
-      powerTimer--;
-  
-      if(powerTimer <= 0){
-          powerMode = false;
-      }
+    powerTimer--;
+
+    if(powerTimer <= 0){
+        powerMode = false;
+    }
   }
+  pushMatrix();
+  color(0, 0, 0);
+  text("Score: " + score, width - 100, 100);
+  popMatrix();
 }
 
 // ==========================================

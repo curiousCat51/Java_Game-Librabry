@@ -5,22 +5,22 @@ class Dot extends WorldObject{
   int dot_type;
   
   Dot(int grid_x, int grid_y, int dot_type){
-      super(WorldTypes.DOT, grid_x, grid_y);
-  
-      this.dot_type = dot_type;
-  
-      if(dot_type == 1){
-          iP = iP + "big";
-      }
-      else{
-          iP = iP + "small";
-      }
-  
-      image = new NormalImage(iP);
-      setImageContainer(image);
+    super(WorldTypes.DOT, grid_x, grid_y);
+
+    this.dot_type = dot_type;
+    
+    switch(dot_type){
+      
+      case 1: iP = iP + "big"; break;
+      case 2: iP = iP + "small"; break;
+    }
+
+    image = new NormalImage(iP);
+    setImageContainer(image);
   }
   
-  void collectDots(){
+  // Dot sammeln
+  void collect(int x, int y){
 
     for(int i = world_objects.size() - 1; i >= 0; i--){
 
@@ -30,25 +30,15 @@ class Dot extends WorldObject{
 
             Dot dot = (Dot)object;
 
-            if(getGridX() == dot.getGridX() &&
-               getGridY() == dot.getGridY()){
+            if(x == dot.getGridX() && y == dot.getGridY()){
 
-                if(dot.dot_type == 0){
-                    // Kleiner Dot
-                    score += 10;
-                }
-
-                if(dot.dot_type == 1){
-                    // Großer Dot
-                    if(dot.dot_type == 1){
-                        powerMode = true;
-                        powerTimer = 600;
-                    }
-                }
-
-                world_objects.remove(i);
+              switch(dot_type){
+                case 1: score += 50; powerMode = true; powerTimer = 600; break; // Großer Dot
+                case 2: score += 10; break; // Kleiner Dot
+              }
+              world_objects.remove(i);
             }
         }
     }
-}
+  }
 }

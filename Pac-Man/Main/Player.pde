@@ -5,6 +5,12 @@ class Player extends Creature{
   int grid_x;
   int grid_y;
   
+  boolean enemy_hit = false;
+  
+  WorldTypes[] collect = {
+    WorldTypes.FRUIT, WorldTypes.DOT
+  };
+  
   Player(int grid_x, int grid_y, float speed){
     super(WorldTypes.PLAYER, grid_x, grid_y, speed);
     
@@ -16,101 +22,158 @@ class Player extends Creature{
     this.grid_x = grid_x;
     this.grid_y = grid_y;
     
-    collision.setCollisionFilter(WorldTypes.WALL);
+    collision.setCollisionEnemy(WorldTypes.ENEMY);
+    collision.setCollisionCollect(collect);
   }
   
   void move(){
 
-      // Eingabe auswerten
-  
-      if(EventListener.getKeyUP()){
-          wish_direction = CreatureDirections.HOCH;
-      }
-  
-      if(EventListener.getKeyDOWN()){
-          wish_direction = CreatureDirections.RUNTER;
-      }
-  
-      if(EventListener.getKeyLEFT()){
-          wish_direction = CreatureDirections.LINKS;
-      }
-  
-      if(EventListener.getKeyRIGHT()){
-          wish_direction = CreatureDirections.RECHTS;
-      }
-  
-  
-      // Aktuelle Bewegung weiterführen
-  
-      updateMovement();
-  
-      if(isMoving()){
-          return;
-      }
-  
-  
-      // Gewünschte Richtung ausprobieren
-  
-      if(wish_direction != CreatureDirections.NEUTRAL &&
-         canMove(wish_direction)){
-  
-          switch(wish_direction){
-  
-              case HOCH:
-                  move(wish_direction, image_left);
-                  break;
-  
-              case RUNTER:
-                  move(wish_direction, image_right);
-                  break;
-  
-              case LINKS:
-                  move(wish_direction, image_left);
-                  break;
-  
-              case RECHTS:
-                  move(wish_direction, image_right);
-                  break;
-  
-              case NEUTRAL:
-                  break;
+    int[] position = getPosition();
+    
+    if(collision.checkForEnemy(position[0], position[1]) && !enemy_hit){
+      
+      enemy_hit = true;
+      
+      for(WorldObject object : world_objects){
+        
+        if(object instanceof Life){
+          
+          Life life = (Life) object;
+          
+          if(life.getState() && !powerMode){
+            
+            life.damage();
+            break;
+            
           }
-  
-          return;
-      }
-  
-  
-      // Falls Wunschrichtung blockiert ist:
-      // aktuelle Richtung weiterlaufen
-  
-      if(direction != CreatureDirections.NEUTRAL &&
-         canMove(direction)){
-  
-          switch(direction){
-  
-              case HOCH:
-                  move(direction, image_left);
-                  break;
-  
-              case RUNTER:
-                  move(direction, image_right);
-                  break;
-  
-              case LINKS:
-                  move(direction, image_left);
-                  break;
-  
-              case RECHTS:
-                  move(direction, image_right);
-                  break;
-  
-              case NEUTRAL:
-                  break;
+          else{
+            // Geist fangen
+            break;
           }
+        }
       }
+    }
+    else{
+      enemy_hit = false;
+    }
+    
+    collect();
+    
+    // Eingabe auswerten
+
+    if(EventListener.getKeyUP()){
+        wish_direction = CreatureDirections.HOCH;
+    }
+
+    if(EventListener.getKeyDOWN()){
+        wish_direction = CreatureDirections.RUNTER;
+    }
+
+    if(EventListener.getKeyLEFT()){
+        wish_direction = CreatureDirections.LINKS;
+    }
+
+    if(EventListener.getKeyRIGHT()){
+        wish_direction = CreatureDirections.RECHTS;
+    }
+
+
+    // Aktuelle Bewegung weiterführen
+
+    updateMovement();
+
+    if(isMoving()){
+        return;
+    }
+
+
+    // Gewünschte Richtung ausprobieren
+
+    if(wish_direction != CreatureDirections.NEUTRAL &&
+       canMove(wish_direction)){
+
+        switch(wish_direction){
+
+            case HOCH:
+                move(wish_direction, image_left);
+                break;
+
+            case RUNTER:
+                move(wish_direction, image_right);
+                break;
+
+            case LINKS:
+                move(wish_direction, image_left);
+                break;
+
+            case RECHTS:
+                move(wish_direction, image_right);
+                break;
+
+            case NEUTRAL:
+                break;
+        }
+
+        return;
+    }
+
+
+    // Falls Wunschrichtung blockiert ist:
+    // aktuelle Richtung weiterlaufen
+
+    if(direction != CreatureDirections.NEUTRAL && canMove(direction)){
+
+        switch(direction){
+
+            case HOCH:
+                move(direction, image_left);
+                break;
+
+            case RUNTER:
+                move(direction, image_right);
+                break;
+
+            case LINKS:
+                move(direction, image_left);
+                break;
+
+            case RECHTS:
+                move(direction, image_right);
+                break;
+
+            case NEUTRAL:
+                break;
+        }
+    }
   }
   
   CreatureDirections getWishDirection(){return this.wish_direction;}
-    // TODO replace a maploaded tile with the player if not a wall or enemy
+  
+  // Methode zum Sammeln von Collectables
+  void collect(){
+    
+    int[] position = getPosition();
+    
+    
+    for(WorldObject object : world_objects){
+      
+      if(object.getGridX() == position[0] && object.getGridY() == position[1]){
+        
+        if(object.getType() == WorldTypes.DOT){
+          Dot dot = (Dot) object;
+          
+          dot.collect(position[0], position[1]);
+          break;
+        }
+        
+        if(object.getType() == WorldTypes.FRUIT){
+          Fruits fruit = (Fruits) object;
+          
+          fruit.collect(position[0], position[1]);
+          break;
+        }
+      }
+    }
+  }
   
 }
