@@ -5,6 +5,9 @@ class Player extends Creature{
   int grid_x;
   int grid_y;
   
+  int spawn_x;
+  int spawn_y;
+  
   boolean enemy_hit = false;
   
   WorldTypes[] collect = {
@@ -21,6 +24,9 @@ class Player extends Creature{
     
     this.grid_x = grid_x;
     this.grid_y = grid_y;
+    
+    spawn_x = grid_x;
+    spawn_y = grid_y;
     
     collision.setCollisionEnemy(WorldTypes.ENEMY);
     collision.setCollisionCollect(collect);
@@ -45,10 +51,6 @@ class Player extends Creature{
             life.damage();
             break;
             
-          }
-          else{
-            // Geist fangen
-            break;
           }
         }
       }
@@ -163,6 +165,7 @@ class Player extends Creature{
           Dot dot = (Dot) object;
           
           dot.collect(position[0], position[1]);
+          checkBonusLife();
           break;
         }
         
@@ -170,6 +173,7 @@ class Player extends Creature{
           Fruits fruit = (Fruits) object;
           
           fruit.collect(position[0], position[1]);
+          checkBonusLife();
           break;
         }
       }

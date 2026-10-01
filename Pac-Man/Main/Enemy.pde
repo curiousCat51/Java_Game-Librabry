@@ -26,6 +26,16 @@ class Enemy extends Creature{
   int spawn_x;
   int spawn_y;
   boolean cought = false;
+  boolean active = true;
+  
+  // Clyde KI
+  final int CLYDE_BLOCK = 0;
+  final int CLYDE_DETOUR = 1;
+  final int CLYDE_RETURN = 2;
+  
+  int clyde_state = CLYDE_BLOCK;
+  GridPosition clyde_target = null;
+  CreatureDirections clyde_detour_direction = CreatureDirections.NEUTRAL;
 
   Enemy(int grid_x, int grid_y, float speed, int gType){
     super(WorldTypes.ENEMY, grid_x, grid_y, speed);
@@ -72,23 +82,25 @@ class Enemy extends Creature{
       int position[] = getPosition();
       
       println("POWER MODE: " + powerMode);
-      if(powerMode){
+      
+      if(powerMode && active){
         
-        direction = chooseFleeDirection();
-        println("Flee direction: " + direction);
-        
+        if(isAtPlayer()){
+          cought = true;
+          println("COUGHT!");
+          active = false;
+          chooseDirection();
+        }
+        else{
+          direction = chooseFleeDirection();
+          println("Flee direction: " + direction);
+        }
       }
       else{
         
         println("NORMAL MODE | Direction: " + direction + " | Previous: " + previous_direction);
         
-        if(isAtPlayer()){
-          if(direction != CreatureDirections.NEUTRAL){
-            previous_direction = direction;
-          }
-          direction = CreatureDirections.NEUTRAL;
-          return;
-        }
+        // isAtPlayer();
         
         if(isDecisionTile(position[0], position[1])){
             direction = chooseDirection();
@@ -109,15 +121,20 @@ class Enemy extends Creature{
         }
       }
       
+      if(isAtSpawn()){
+        active = true;
+        cought = false;
+      }
+      
       switch(direction){
   
         case RECHTS:{
-          if(powerMode){
-            move(direction, image_vul);
+          if(cought){
+            move(direction, image_cought_right);
             break;
           }
-          else if(cought){
-            move(direction, image_cought_right);
+          else if(powerMode){
+            move(direction, image_vul);
             break;
           }
           else{
@@ -127,12 +144,12 @@ class Enemy extends Creature{
         }
   
         case LINKS:{
-          if(powerMode){
-            move(direction, image_vul);
+          if(cought){
+            move(direction, image_cought_left);
             break;
           }
-          else if(cought){
-            move(direction, image_cought_left);
+          else if(powerMode){
+            move(direction, image_vul);
             break;
           }
           else{
@@ -142,12 +159,12 @@ class Enemy extends Creature{
         }
   
         case HOCH:{
-          if(powerMode){
-            move(direction, image_vul);
+          if(cought){
+            move(direction, image_cought_up);
             break;
           }
-          else if(cought){
-            move(direction, image_cought_up);
+          else if(powerMode){
+            move(direction, image_vul);
             break;
           }
           else{
@@ -157,12 +174,12 @@ class Enemy extends Creature{
         }
   
         case RUNTER:{
-          if(powerMode){
-            move(direction, image_vul);
+          if(cought){
+            move(direction, image_cought_down);
             break;
           }
-          else if(cought){
-            move(direction, image_cought_down);
+          else if(powerMode){
+            move(direction, image_vul);
             break;
           }
           else{
@@ -172,12 +189,12 @@ class Enemy extends Creature{
         }
   
         case NEUTRAL:{
-          if(powerMode){
-            move(direction, image_vul);
+          if(cought){
+            move(direction, image_cought_left);
             break;
           }
-          else if(cought){
-            move(direction, image_cought_left);
+          else if(powerMode){
+            move(direction, image_vul);
             break;
           }
           else{
@@ -189,12 +206,12 @@ class Enemy extends Creature{
     }
   
   // Methode zur Wahl einer neuen Richtung
-  CreatureDirections chooseDirection() {
-    int position[] = getPosition();
-    GridPosition target = visitLoop();
-    
+CreatureDirections chooseDirection(int targetX, int targetY){
+    int[] position = getPosition();
+    GridPosition target = visitLoop(targetX, targetY);
+  
     if(target == null){
-      return this.direction;
+      return direction;
     }
     
     
@@ -227,7 +244,7 @@ class Enemy extends Creature{
     if(current.y < position[1]){
       return CreatureDirections.HOCH;
     }
-    if(position[0] == target.x && position[1] == target.y){
+    if(position[0] == current.x && position[1] == current.y){
       return CreatureDirections.NEUTRAL;
     }
   
@@ -348,6 +365,10 @@ class Enemy extends Creature{
     int nextX = current.x + pos[0];
     int nextY = current.y + pos[1];
     
+    if(nextX < 0 || nextX >= (int) map_end.getX() || nextY < 0 || nextY >= (int) map_end.getY()){
+      return;
+    }
+    
     GridPosition next = new GridPosition(nextX, nextY);
     next.previous = current;
     
@@ -389,46 +410,35 @@ class Enemy extends Creature{
   }
   
   // Schleifen-Methode für die Wegfindung
-  GridPosition visitLoop(){
-    
-    Player player = null;
-    
+  GridPosition visitLoop(int targetX, int targetY){
 
-     for(WorldObject object : world_objects){
-       if(object instanceof Player){
-         player = (Player) object;
-         break;
-      }
-     }
-  
-    if(player == null){
-      return null;
+  toVisit.clear();
+  visited.clear();
+
+  int[] position = getPosition();
+
+  GridPosition start = new GridPosition(position[0], position[1]);
+  toVisit.add(start);
+
+  while(!toVisit.isEmpty()){
+    GridPosition found = visit(targetX, targetY);
+
+    if(found != null){
+      return found;
     }
-          
-    toVisit.clear();
-    visited.clear();
-          
-    int[] position = getPosition();
-      
-    GridPosition start = new GridPosition(position[0], position[1]);
-          
-    toVisit.add(start);
-        
-    int targetX = player.getGridX();
-    int targetY = player.getGridY();
+  }
+
+  return null;
+}
+  
+  int[] calcVector(int blinky_x, int blinky_y, int player_x, int player_y){
+    int x = player_x + 2 * (player_x - blinky_x);
+    int y = player_y + 2 * (player_y - blinky_y);
     
-    
-    
-     while(!toVisit.isEmpty()){
-       GridPosition found = visit(targetX, targetY);
-       if(found != null){
-         return found;
-       }
-     }
-     return null;
+    return new int[]{x, y};
   }
   
-  
+  int getGType(){return this.gType;}
   
   // Methode zur Überprüfung, ob ein Feld bereits besucht wurde
   boolean isVisited(GridPosition position){
@@ -439,5 +449,98 @@ class Enemy extends Creature{
       }
     }  
     return false;
+  }
+  
+  boolean isAtSpawn(){
+    int[] position = getPosition();
+    
+    if(position[0] == spawn_x && position[1] == spawn_y){
+      return true;
+    }
+    
+    return false;
+  }
+  
+  int calculateDistance(int targetX, int targetY){
+    int[] position = getPosition();
+    return abs(targetX - position[0]) + abs(targetY - position[1]);
+  }
+  
+  int generateNumber(){
+    return (int) random(0, 5 + 1);
+  }
+  
+  CreatureDirections getReverseDirection(){
+    CreatureDirections reverse = oppositeDirection(direction);
+  
+    if(canMove(reverse)){
+      return reverse;
+    }
+  
+    return getFreeDirection();
+  }
+  
+  CreatureDirections chooseDirection(){
+    int[] target = getCurrentTarget();
+    return chooseDirection(target[0], target[1]);
+  }
+  
+  int[] getCurrentTarget(){
+    Player player = null;
+    Enemy blinky = null;
+  
+    for(WorldObject object : world_objects){
+      if(object instanceof Player){
+        player = (Player) object;
+      }
+  
+      if(object instanceof Enemy){
+        Enemy e = (Enemy) object;
+        if(e.getGType() == 4){
+          blinky = e;
+        }
+      }
+    }
+  
+    if(player == null){
+      return new int[]{spawn_x, spawn_y};
+    }
+  
+    if(cought){
+      return new int[]{spawn_x, spawn_y};
+    }
+  
+    switch(gType){
+      case 1:{
+        if(blinky == null){
+          return new int[]{player.getGridX(), player.getGridY()};
+        }
+  
+        int[] vector = calcVector(
+          blinky.getGridX(), blinky.getGridY(),
+          player.getGridX(), player.getGridY()
+        );
+  
+        return vector;
+      }
+  
+      case 2:{
+        // Clyde bekommt sein eigenes Ziel später
+        return new int[]{player.getGridX(), player.getGridY()};
+      }
+  
+      case 3:{
+        int[] move = moveDic(player.getDirection());
+  
+        return new int[]{
+          player.getGridX() + 4 * move[0],
+          player.getGridY() + 4 * move[1]
+        };
+      }
+  
+      default:{
+        return new int[]{player.getGridX(), player.getGridY()};
+      }
+    }
   }
 }

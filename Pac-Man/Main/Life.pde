@@ -5,7 +5,11 @@ class Life extends WorldObject{
   
   boolean alive = true;
   
-  int damage_state = 0;
+  int animation_frame = 0;
+  
+  boolean in_animation = false;
+  
+  float animation_timer = 0;
   
   Life(int grid_x, int grid_y){
     super(WorldTypes.LIFE, grid_x, grid_y);
@@ -25,18 +29,35 @@ class Life extends WorldObject{
   
   void damage(){
     
-    if(!alive){
+    if(in_animation || !alive){
+      return;
+    }
+    in_animation = true;
+    animation_frame = 0;
+    animation_timer = 0;
+    
+    lifes--;
+  }
+  
+  void updateAnimation(){
+    if(!in_animation){
       return;
     }
     
-    damage_state++;
+    animation_timer++;
     
-    setImageContainer(images[damage_state]);
-    
-    if(damage_state == 6){
-      alive = false;
-      lifes--;
-    }    
+    if(animation_timer >= 8){
+      animation_timer = 0;
+      
+      if(animation_frame < images.length - 1){
+        animation_frame++;
+        setImageContainer(images[animation_frame]);
+      }
+      else{
+        in_animation = false;
+        alive = false;
+      }
+    }
   }
   
   boolean getState(){return alive;}

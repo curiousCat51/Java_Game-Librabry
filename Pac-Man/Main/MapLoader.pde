@@ -1,8 +1,10 @@
 class MapLoader{
+  int map_height;
   
   MapLoader(ArrayList<WorldObject> world_objects){
    String[] lines = loadStrings("data/map/map1.txt");  
    
+   map_height = lines.length;
    
    for(int i = 0; i < lines.length; i++){
      char[] characters = lines[i].toCharArray();
@@ -14,14 +16,10 @@ class MapLoader{
          case 'o': world_objects.add(new Dot(j, i, 1)); break; // Punkt Groß
          case '.': world_objects.add(new Dot(j, i, 2)); break; // Punkt Klein
          
-         case 'h': world_objects.add(new Life(j, i)); lifes++; break; // Leben
-         
          case 'c': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 1)); break; // Geist Cyan
          case 'g': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 2)); break; // Geist Orange
          case 'p': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 3)); break; // Geist Pink
          case 'r': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 4)); break; // Geist Red
-         
-         case 'x': world_objects.add(new Fruits(j, i, 1)); break; // Frucht
          
          case 'P': world_objects.add(new Player(j, i, PLAYER_SPEED)); break; // Spieler
          
@@ -47,5 +45,9 @@ class MapLoader{
        }
      }
    }
+  }
+  
+  int getMapHeight(){
+    return map_height;
   }
 }

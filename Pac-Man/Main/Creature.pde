@@ -167,24 +167,20 @@ class Creature extends WorldObject {
     GridPosition new_pos;
     
     // (7, -1) (7, 29)
-    if(getType() == WorldTypes.PLAYER){
-      if(pos_x == border_left.getX() && pos_y == border_left.getY()){
-        new_pos = new GridPosition(border_right.getX() + XY[0], border_right.getY() + XY[1]);
-      }
-      else if(pos_x == border_right.getX() && pos_y == border_right.getY()){
-        new_pos = new GridPosition(border_left.getX() + XY[0], border_left.getY() + XY[1]);
-      }
-      else{
-        new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
-      }
+    if(pos_x == border_left.getX() && pos_y == border_left.getY()){
+      new_pos = new GridPosition(border_right.getX() + XY[0], border_right.getY() + XY[1]);
+    }
+    else if(pos_x == border_right.getX() && pos_y == border_right.getY()){
+      new_pos = new GridPosition(border_left.getX() + XY[0], border_left.getY() + XY[1]);
     }
     else{
       new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
     }
-
     
     return new_pos;
   }
+  
+  CreatureDirections getDirection(){return this.direction;}
   
   // Methode zum Anzeigen der Creatur
   void display(){

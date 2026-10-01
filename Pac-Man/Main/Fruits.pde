@@ -4,10 +4,15 @@ class Fruits extends WorldObject{
  String iP = "data/images/Items/";
  int fruit_type;
  
- Fruits(int grid_x, int grid_y, int fruit_type){
+ boolean collectable = false;
+ 
+ // x = 13
+ // y = 15
+ 
+ Fruits(int grid_x, int grid_y){
   super(WorldTypes.FRUIT, grid_x, grid_y);
   
-  this.fruit_type = fruit_type;
+  this.fruit_type = generateFruit();
   
   switch(fruit_type){
     case 1: iP = iP + "cherry"; break;
@@ -46,8 +51,9 @@ class Fruits extends WorldObject{
                   case 7: score += 3000; break; // Glocke
                   case 8: score += 5000; break; // Schlüssel
                 }
-
                 world_objects.remove(i);
+                dot_count -= 70;
+                fruit_spawned = false;
             }
         }
     }
@@ -55,5 +61,12 @@ class Fruits extends WorldObject{
  
  int generateFruit(){
    return (int) random(1, 9);
+ }
+ 
+ boolean isCollectable(){return this.collectable;}
+ 
+ // Nur anzeigen, wenn genug Punkte gesammelt wurden
+ void display(){   
+   drawObject();
  }
 }

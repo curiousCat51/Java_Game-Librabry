@@ -21,6 +21,7 @@ class Dot extends WorldObject{
   
   // Dot sammeln
   void collect(int x, int y){
+  
 
     for(int i = world_objects.size() - 1; i >= 0; i--){
 
@@ -36,9 +37,14 @@ class Dot extends WorldObject{
                 case 1: score += 50; powerMode = true; powerTimer = 600; break; // Großer Dot
                 case 2: score += 10; break; // Kleiner Dot
               }
+              dot_count++;
               world_objects.remove(i);
             }
         }
     }
+  }
+  
+  void display(){
+    drawObject();
   }
 }
