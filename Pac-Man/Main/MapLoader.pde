@@ -1,6 +1,8 @@
 class MapLoader{
   int map_height;
   
+  int id = 1;
+  
   MapLoader(ArrayList<WorldObject> world_objects){
    String[] lines = loadStrings("data/map/map1.txt");  
    
@@ -13,15 +15,18 @@ class MapLoader{
        char character = characters[j];
        
        switch(character){
-         case 'o': world_objects.add(new Dot(j, i, 1)); break; // Punkt Groß
-         case '.': world_objects.add(new Dot(j, i, 2)); break; // Punkt Klein
+         case 'x': out_of_map.add(new GridPosition(i, j)); break; // Position außerhalb der Karte
          
-         case 'c': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 1)); break; // Geist Cyan
-         case 'g': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 2)); break; // Geist Orange
-         case 'p': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 3)); break; // Geist Pink
-         case 'r': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 4)); break; // Geist Red
+         case 'T': world_objects.add(new Teleporter(j, i, id)); free_tiles.add(new GridPosition(j, i)); id++; break;
+         case 'o': world_objects.add(new Dot(j, i, 1)); free_tiles.add(new GridPosition(j,i)); break; // Punkt Groß
+         case '.': world_objects.add(new Dot(j, i, 2)); free_tiles.add(new GridPosition(j,i)); break; // Punkt Klein
          
-         case 'P': world_objects.add(new Player(j, i, PLAYER_SPEED)); break; // Spieler
+         case 'c': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 1)); free_tiles.add(new GridPosition(j,i)); break; // Geist Cyan
+         case 'g': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 2)); free_tiles.add(new GridPosition(j,i)); break; // Geist Orange
+         case 'p': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 3)); free_tiles.add(new GridPosition(j,i)); break; // Geist Pink
+         case 'r': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 4)); free_tiles.add(new GridPosition(j,i)); break; // Geist Red
+         
+         case 'P': world_objects.add(new Player(j, i, PLAYER_SPEED)); free_tiles.add(new GridPosition(j,i)); break; // Spieler
          
          case '_': world_objects.add(new Wall(j, i, 6, 0)); break; // Wand Tür
          
@@ -42,6 +47,12 @@ class MapLoader{
          case '6': world_objects.add(new Wall(j, i, 2, 2)); break; // Wand Ecke 2
          case '7': world_objects.add(new Wall(j, i, 2, 3)); break; // Wand Ecke 3
          case '8': world_objects.add(new Wall(j, i, 2, 4)); break; // Wand Ecke 4
+         
+         default:{
+           if((j == 10 && (i > 4 || i < 23)) || (j == 11 && (i > 4 || i < 23)) || (j == 15 && (i > 4 || i < 23)) || (j == 16 && (i > 4 || i < 23))){
+             free_tiles.add(new GridPosition(j,i)); // Freies Tile
+           }
+         }
        }
      }
    }

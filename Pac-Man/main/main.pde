@@ -18,6 +18,13 @@ float ANIMATION_SPEED = 0.1f;
 // Liste der Objekte (Spieler, Wände, Gegner, ...)
 ArrayList<WorldObject> world_objects;
 
+// Liste der Freien Tiles
+ArrayList<GridPosition> free_tiles;
+
+ArrayList<GridPosition> out_of_map;
+
+ArrayList<Timer> timer;
+
 GridPosition map_end = new GridPosition(29, 28);
 
 // Objekt zum handling von Eingaben 
@@ -53,12 +60,23 @@ Screens screen = new Screens();
 // 2. SETUP (Initialisierung)
 // ==========================================
 void setup(){
+  // Anpassbar an den Bildschirm
   size(1024, 1024);
+  windowResizable(true);
+  
   imageMode(CENTER);
   noSmooth();
   
   // Erstellung der Welt-Objekt-Liste
   world_objects = new ArrayList<WorldObject>();
+  
+  // Erstellung der Liste für freie Tiles
+  free_tiles = new ArrayList<GridPosition>();
+  
+  // Erstellung der Elemente, welche außerhalb der Map liegen
+  out_of_map = new ArrayList<GridPosition>();
+  
+  timer = new ArrayList<Timer>();
   
   // Aufruf des MapLoaders
   new MapLoader(world_objects);

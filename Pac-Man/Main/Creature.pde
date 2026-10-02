@@ -51,11 +51,13 @@ class Creature extends WorldObject {
       }
   }
   
+  // Richtung + Richtungsbild aktualisieren
   void updateDirection(CreatureDirections choosen, ImageContainer image){
     setImageContainer(image); 
     direction = choosen;
   }
   
+  // Freie Richtung auswählen
   CreatureDirections getFreeDirection(){
 
       for(CreatureDirections dir : CreatureDirections.values()){
@@ -82,6 +84,7 @@ class Creature extends WorldObject {
     return collision.checkCollision(getGridX() + x, getGridY() + y);
   }
   
+  // Eigenes "Dictionary" für eine gewählte Richtung
   int[] moveDic(CreatureDirections dir){
     
     int x = 0;
@@ -95,6 +98,7 @@ class Creature extends WorldObject {
     return new int[]{x,y};
   }
   
+  // Ist eine Creatur am Spieler angekommen
   boolean isAtPlayer(){
 
       int[] position = getPosition();
@@ -114,6 +118,7 @@ class Creature extends WorldObject {
       return false;
   }
   
+  // Startet die Bewegung zwischen Tilemittelpunkten ohne von der mittleren Linie abzukommen
   void startMovement(int targetX, int targetY){
 
       startPixelX = getPixelX();
@@ -128,6 +133,7 @@ class Creature extends WorldObject {
       moveProgress = 0.0;
   }
   
+ // Aktualisieren der Position zwischen Tilemittelpunkten
  void updateMovement(){
 
       if(moveProgress >= 1.0){
@@ -156,6 +162,7 @@ class Creature extends WorldObject {
       }
   }
   
+  // Überprüft ob eine Creatur sich grade zwischen zwei Tiles bewegt oder nicht
   boolean isMoving(){
 
       return moveProgress < 1.0;
@@ -166,12 +173,16 @@ class Creature extends WorldObject {
     int[] XY = moveDic(chosen);
     GridPosition new_pos;
     
-    // (7, -1) (7, 29)
-    if(pos_x == border_left.getX() && pos_y == border_left.getY()){
-      new_pos = new GridPosition(border_right.getX() + XY[0], border_right.getY() + XY[1]);
-    }
-    else if(pos_x == border_right.getX() && pos_y == border_right.getY()){
-      new_pos = new GridPosition(border_left.getX() + XY[0], border_left.getY() + XY[1]);
+    if(getType() == WorldTypes.PLAYER){
+      if(isAtSameTile(pos_x, pos_y, border_left.getX(), border_left.getY())){
+        new_pos = new GridPosition(border_right.getX() + XY[0], border_right.getY() + XY[1]);
+      }
+      else if(isAtSameTile(pos_x, pos_y, border_right.getX(), border_right.getY())){
+        new_pos = new GridPosition(border_left.getX() + XY[0], border_left.getY() + XY[1]);
+      }
+      else{
+        new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
+      }
     }
     else{
       new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
@@ -180,6 +191,11 @@ class Creature extends WorldObject {
     return new_pos;
   }
   
+  boolean isAtSameTile(int pos_x1, int pos_y1, int pos_x2, int pos_y2){
+    return pos_x1 == pos_x2 && pos_y1 == pos_y2;
+  }
+  
+  // Gibt die aktuelle Richtung einer Creatur zurück
   CreatureDirections getDirection(){return this.direction;}
   
   // Methode zum Anzeigen der Creatur

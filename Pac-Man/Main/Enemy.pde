@@ -47,7 +47,7 @@ class Enemy extends Creature{
     
     switch(gType){
       case 1: iP = iP + "cyan_walk_"; break; // Inky bewegt sich abhängig von Pac-Man and Blinkys Position
-      case 2: iP = iP + "orange_walk_"; break; // Clyde wechselt zwischen Pac-Man nähern und vor Pac-Man fliehen
+      case 2: iP = iP + "orange_walk_"; break; // Clyde wechselt zwischen Pac-Man folgen und Weg blockieren
       case 3: iP = iP + "pink_walk_"; break; // Pinky schneidet Wege ab (Pac-Man's aktuelle Position + 4 Felder in Pac-Man's bewegungs Richtung)
       case 4: iP = iP + "red_walk_"; break; // Blinky jagt direkt (Pac-Man's aktuelle Position)
     }
@@ -100,12 +100,12 @@ class Enemy extends Creature{
         
         println("NORMAL MODE | Direction: " + direction + " | Previous: " + previous_direction);
         
-        // isAtPlayer();
+        
         
         if(isDecisionTile(position[0], position[1])){
             direction = chooseDirection();
         }
-        else if(isDeadEnd(position[0], position[1])){
+        else if(isDeadEnd(position[0], position[1]) || ((position[0] == border_left.getX() && position[1] == border_left.getY()) || (position[0] == border_right.getX() && position[1] == border_right.getY()))){
             direction = chooseDirection();
         }        
       }
@@ -206,7 +206,7 @@ class Enemy extends Creature{
     }
   
   // Methode zur Wahl einer neuen Richtung
-CreatureDirections chooseDirection(int targetX, int targetY){
+  CreatureDirections chooseDirection(int targetX, int targetY){
     int[] position = getPosition();
     GridPosition target = visitLoop(targetX, targetY);
   
@@ -251,6 +251,7 @@ CreatureDirections chooseDirection(int targetX, int targetY){
     return this.direction;
   }
   
+  // Methode zur Wahl einer Fluchtrichtung (im Power Modus)
   CreatureDirections chooseFleeDirection(){
     CreatureDirections direction = chooseDirection();
     
@@ -388,7 +389,7 @@ CreatureDirections chooseDirection(int targetX, int targetY){
     return false;
   }
   
-  // Methode um die zu besuchenden Felder in die besuchten Felder hinzuzufügen
+  // Methode zum abgleich der besuchten und zubesuchenden Felder
   GridPosition visit(int targetX, int targetY){      
     
     GridPosition current = toVisit.get(0);
@@ -431,6 +432,7 @@ CreatureDirections chooseDirection(int targetX, int targetY){
   return null;
 }
   
+  // Methode zur Berechnung einer Vektor Position abhängig von zwei Punkten
   int[] calcVector(int blinky_x, int blinky_y, int player_x, int player_y){
     int x = player_x + 2 * (player_x - blinky_x);
     int y = player_y + 2 * (player_y - blinky_y);
@@ -451,6 +453,7 @@ CreatureDirections chooseDirection(int targetX, int targetY){
     return false;
   }
   
+  // Methode zur überprüfung, ob ein Geist an seinen Spawn zurückgekehrt ist
   boolean isAtSpawn(){
     int[] position = getPosition();
     
@@ -461,15 +464,18 @@ CreatureDirections chooseDirection(int targetX, int targetY){
     return false;
   }
   
+  // Methode zur Berechnung der Entfernung nach der Manhatten-Metrik
   int calculateDistance(int targetX, int targetY){
     int[] position = getPosition();
     return abs(targetX - position[0]) + abs(targetY - position[1]);
   }
   
+  // Methode zur Generierung einer Zufallszahl 
   int generateNumber(){
     return (int) random(0, 5 + 1);
   }
   
+  // Methode zur ermittlung der invertierten Richtung
   CreatureDirections getReverseDirection(){
     CreatureDirections reverse = oppositeDirection(direction);
   
@@ -480,11 +486,13 @@ CreatureDirections chooseDirection(int targetX, int targetY){
     return getFreeDirection();
   }
   
+  // Methode zur Wahl einer Richtung abhängig von einem Ziel-Tile
   CreatureDirections chooseDirection(){
     int[] target = getCurrentTarget();
     return chooseDirection(target[0], target[1]);
   }
   
+  // Methode zur Rückgabe des aktuellen Ziel-Tiles
   int[] getCurrentTarget(){
     Player player = null;
     Enemy blinky = null;
@@ -509,37 +517,43 @@ CreatureDirections chooseDirection(int targetX, int targetY){
     if(cought){
       return new int[]{spawn_x, spawn_y};
     }
+    
+    int player_x = player.getGridX();
+    int player_y = player.getGridY();
   
     switch(gType){
       case 1:{
+        // Inky
         if(blinky == null){
-          return new int[]{player.getGridX(), player.getGridY()};
+          return new int[]{player_x, player_y};
         }
   
-        int[] vector = calcVector(
-          blinky.getGridX(), blinky.getGridY(),
-          player.getGridX(), player.getGridY()
-        );
+        int[] vector = calcVector(blinky.getGridX(), blinky.getGridY(), player_x, player_y);
   
         return vector;
       }
   
       case 2:{
-        // Clyde bekommt sein eigenes Ziel später
-        return new int[]{player.getGridX(), player.getGridY()};
+        // Clyde
+        // - Wählt sein Ziel
+        // - Bewegt sich zum Ziel
+        // - Läuft in eine Richtung von dem Tile, bis zum nächsten DecisionTile und kehrt dann wieder um
+        // - Wählt ein neues Ziel
+        
+        if(calculateDistance(player_x, player_y) > 8){
+          return new int[]{player_x, player_y};
+        }
       }
   
       case 3:{
+        // Pinky
         int[] move = moveDic(player.getDirection());
   
-        return new int[]{
-          player.getGridX() + 4 * move[0],
-          player.getGridY() + 4 * move[1]
-        };
+        return new int[]{player_x + 4 * move[0], player_y + 4 * move[1]};
       }
-  
       default:{
-        return new int[]{player.getGridX(), player.getGridY()};
+        // Blinky
+        return new int[]{player_x, player_y};
       }
     }
   }
