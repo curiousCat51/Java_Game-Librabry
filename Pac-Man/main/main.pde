@@ -1,16 +1,33 @@
+import processing.awt.PSurfaceAWT.SmoothCanvas;
+import javax.swing.JFrame;
+import java.awt.Dimension;
 // ==========================================
-// 1. GLOBALE VARIABLEN
+// GRÖSSEN / LAYOUT
 // ==========================================
 
-// Größenskalierung der Darstellung
 float SCALE = 2;
-
-// Größe eines einzelnen Feldes
 float TILE_SIZE = 16 * SCALE;
 
-// Geschwindigkeit der Beweglichen Entitäten
-float PLAYER_SPEED = 0.6f * SCALE; // Wieder auf 0.7f setzen
-float ENEMY_SPEED = 0.6f * SCALE; // Wieder auf 0.8f setzen
+// Grundgeschwindigkeit pro Tile
+float PLAYER_SPEED = 0.6f * SCALE;
+float ENEMY_SPEED = 0.6f * SCALE;
+
+// Größe des Informationsbereichs rechts
+float sidePanelWidth;
+
+// Position der Map auf dem Bildschirm
+float mapOffsetX;
+float mapOffsetY;
+
+// Abstände um die Map
+float layoutMargin = 20;
+
+// Mapgröße
+int map_width;
+int map_height;
+
+float previousWidth;
+float previousHeight;
 
 // Geschwindigkeit von Animationen
 float ANIMATION_SPEED = 0.1f;
@@ -21,14 +38,16 @@ ArrayList<WorldObject> world_objects;
 // Liste der Freien Tiles
 ArrayList<GridPosition> free_tiles;
 
+// Liste der Tiles welche nicht erreichbar sein sollten
 ArrayList<GridPosition> out_of_map;
 
+// Liste der Timer
 ArrayList<Timer> timer;
-
-GridPosition map_end = new GridPosition(29, 28);
 
 // Objekt zum handling von Eingaben 
 KeyHandler EventListener;
+
+GridPosition score_position;
 
 // Punkte
 int score = 0;
@@ -50,56 +69,98 @@ int leben_erstellt = 0;
 // Bereits vergebene Bonusleben
 int bonus_lebenS = 0;
 
-int map_height;
-
 boolean game_over = false;
 
 Screens screen = new Screens();
-
 // ==========================================
 // 2. SETUP (Initialisierung)
 // ==========================================
 void setup(){
-  // Anpassbar an den Bildschirm
+
   size(1024, 1024);
-  windowResizable(true);
+  surface.setResizable(true);
   
+  SmoothCanvas canvas = (SmoothCanvas) surface.getNative();
+  JFrame frame = (JFrame) canvas.getFrame();
+
+  frame.setMinimumSize(new Dimension(800, 600));
+
   imageMode(CENTER);
   noSmooth();
-  
-  // Erstellung der Welt-Objekt-Liste
+
   world_objects = new ArrayList<WorldObject>();
-  
-  // Erstellung der Liste für freie Tiles
   free_tiles = new ArrayList<GridPosition>();
-  
-  // Erstellung der Elemente, welche außerhalb der Map liegen
   out_of_map = new ArrayList<GridPosition>();
-  
   timer = new ArrayList<Timer>();
-  
-  // Aufruf des MapLoaders
+
+  // Map laden
   new MapLoader(world_objects);
-  
-  // Erstellung des KeyHandler-Objektes
+
+  // Layout anhand der geladenen Map berechnen
+  updateLayout();
+
   EventListener = new KeyHandler();
-  
-  MapLoader loader = new MapLoader(world_objects);
-  
-  map_height = loader.getMapHeight();
-  
-  for(int i = 0; i <= lifes + 1; i+=2){
-    Life life = new Life(i, map_height);
-    world_objects.add(life);
-    last_life_x = i;
-    leben_erstellt++;
+
+  // TODO:
+  // Die Lebensanzeige  später in den rechten Informationsbereich verschieben
+  previousWidth = width;
+  previousHeight = height;
+}
+
+// ==========================================
+// DYNAMISCHES LAYOUT
+// ==========================================
+
+void updateLayout(){
+
+  if(map_width <= 0 || map_height <= 0){
+    return;
   }
+
+  // Rechter Bereich für Score, Leben usw.
+  sidePanelWidth = constrain(width * 0.25f, 180, 320);
+
+  // Platz, der der Map zur Verfügung steht
+  float availableWidth = width - sidePanelWidth;
+  float availableHeight = height;
+
+  // Größe eines Tiles so wählen,
+  // dass die komplette Map hineinpasst
+  TILE_SIZE = min((availableWidth - layoutMargin * 2) / map_width,(availableHeight - layoutMargin * 2) / map_height);
+
+  // Die Bilder sind 16x16 Pixel groß
+  SCALE = TILE_SIZE / 16.0f;
+
+  // Geschwindigkeiten an die neue Größe anpassen
+  PLAYER_SPEED = 0.6f * SCALE;
+  ENEMY_SPEED = 0.6f * SCALE;
+
+  // Tatsächliche Größe der Map
+  float mapPixelWidth = map_width * TILE_SIZE;
+  float mapPixelHeight = map_height * TILE_SIZE;
+
+  // Map innerhalb des linken Bereiches zentrieren
+  mapOffsetX = (availableWidth - mapPixelWidth) / 2.0f;
+  mapOffsetY = (height - mapPixelHeight) / 2.0f;
 }
 
 // ==========================================
 // 3. DRAW-LOOP (Hauptschleife)
 // ==========================================
 void draw(){
+  
+  if(width != previousWidth || height != previousHeight){
+
+    updateLayout();
+  
+    for(WorldObject object : world_objects){
+      object.updateLayoutPosition();
+    }
+  
+    previousWidth = width;
+    previousHeight = height;
+  }
+  
   background(0);
   
   if(game_over){
@@ -114,7 +175,13 @@ void draw(){
   
       WorldObject object = world_objects.get(i);
   
-      if(object instanceof Enemy){
+      if(object instanceof Teleporter){
+        Teleporter t = (Teleporter) object;
+        
+        t.TPupdate();
+        t.display();
+      }
+      else if(object instanceof Enemy){
   
           Enemy e = (Enemy) object;
   
@@ -159,8 +226,15 @@ void draw(){
     }
     pushMatrix();
     color(0, 0, 0);
-    text("Score: " + score + "\n Dots collected: " + dot_count, width - 100, 100);
+    //text("Score: " + score + "\n Dots collected: " + dot_count, score_position.getX(), score_position.getY());
     popMatrix();
+    
+    for(Timer time : timer){
+      pushMatrix();
+      color(0, 0, 0);
+      //text(time.timerName() + time.getTime(), score_position.getX(), 3);
+      popMatrix();
+    }
   }
   
   if(isGameOver()){
@@ -194,7 +268,7 @@ boolean isGameOver(){
 
 void newFruit(){  
   if(dot_count == 70 && !fruit_spawned){
-    Fruits fruit = new Fruits(13, 15);
+    Fruits fruit = new Fruits(13, 16);
     world_objects.add(fruit);
     fruit_spawned = true;
   }
@@ -217,8 +291,8 @@ void updateHearts() {
   }
 
   // Neue Herzen entsprechend der Lebensanzahl erzeugen
-  for (int i = 0; i < lifes; i++) {
-    Life life = new Life(i * 2, map_height);
+  for (int i = last_life_x; i < lifes; i++) {
+    Life life = new Life(2, map_width + i * 2);
     world_objects.add(life);
   }
 }

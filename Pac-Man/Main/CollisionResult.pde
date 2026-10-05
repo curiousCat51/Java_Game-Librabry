@@ -24,25 +24,50 @@ class CollisionResult{
   }
   
   
-  // Collision check für Wände
+  // Collision check für Wände und Out of Map Elemente
   boolean checkCollision(int move_x, int move_y){
-    
-    for( WorldObject object: world_objects){
-      
-      if(object.getType() == collision_filter){
-        Wall wall = (Wall) object;
-        
-        if(!wall.isPassThrough()){
-                 
-          int[] position = wall.getPosition();
-          int wall_x = position[0];
-          int wall_y = position[1];
-          
-          
-          if (move_x == wall_x && move_y == wall_y) {
-            return false;
-          }
+
+  // Außerhalb der geladenen Map?
+  if(move_x < 0 || move_x >= map_width || move_y < 0 || move_y >= map_height){
+    return false;
+  }
+
+  // Explizit als nicht begehbar markiertes Tile?
+  if(!isBlockedByMap(move_x, move_y)){
+    return false;
+  }
+
+  // Wände prüfen
+  for(WorldObject object : world_objects){
+
+    if(object.getType() == collision_filter){
+
+      Wall wall = (Wall) object;
+
+      if(!wall.isPassThrough()){
+
+        int[] position = wall.getPosition();
+
+        int wall_x = position[0];
+        int wall_y = position[1];
+
+        if(move_x == wall_x && move_y == wall_y){
+          return false;
         }
+      }
+    }
+  }
+
+  return true;
+}
+  
+  // Außerhalb der Map?
+  boolean isBlockedByMap(int next_x, int next_y){
+    
+    for(GridPosition out : out_of_map){
+        
+      if(next_x == out.getX() && next_y == out.getY()){
+         return false; 
       }
     }
     return true;

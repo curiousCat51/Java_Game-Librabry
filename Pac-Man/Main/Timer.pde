@@ -21,6 +21,8 @@ class Timer{
     }
   }
   
+  int getTime(){return current;}
+  
   boolean isfinish(){
     if(current == end){
       return true;
@@ -28,5 +30,5 @@ class Timer{
     return false;
   }
   
-  String getName(){return name;}
+  String timerName(){return name;}
 }

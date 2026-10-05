@@ -366,8 +366,11 @@ class Enemy extends Creature{
     int nextX = current.x + pos[0];
     int nextY = current.y + pos[1];
     
-    if(nextX < 0 || nextX >= (int) map_end.getX() || nextY < 0 || nextY >= (int) map_end.getY()){
-      return;
+    GridPosition first = out_of_map.get(0);
+    GridPosition last = out_of_map.get(out_of_map.size() - 1);
+    
+    if(nextX < first.getX() || nextX > last.getX() || nextY < first.getY() || nextY > last.getY()){
+     return; 
     }
     
     GridPosition next = new GridPosition(nextX, nextY);

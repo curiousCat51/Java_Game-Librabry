@@ -23,11 +23,12 @@ class WorldObject{
   }
   
   float convertToPixel(float position){
-    return position * TILE_SIZE + (TILE_SIZE / 2);
+    return mapOffsetX + position * TILE_SIZE + (TILE_SIZE / 2);
   }
-  
+
   float convertToGrid(float position){
-    return Math.round((position - (TILE_SIZE / 2)) / TILE_SIZE);
+    return Math.round(
+      (position - mapOffsetX - (TILE_SIZE / 2)) / TILE_SIZE);
   }
   
   float getPixelX(){
@@ -60,5 +61,11 @@ class WorldObject{
    setPixelX(convertToPixel(grid_x));
    setGridY(grid_y);
    setPixelY(convertToPixel(grid_y));
+  }
+  
+  void updateLayoutPosition(){
+  
+    pixel_x = convertToPixel(grid_x);
+    pixel_y = convertToPixel(grid_y);
   }
 }

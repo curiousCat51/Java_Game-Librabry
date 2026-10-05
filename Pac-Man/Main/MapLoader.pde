@@ -4,9 +4,13 @@ class MapLoader{
   int id = 1;
   
   MapLoader(ArrayList<WorldObject> world_objects){
-   String[] lines = loadStrings("data/map/map1.txt");  
+    String[] lines = loadStrings("data/map/map1.txt");
+    // Größe der geladenen Map automatisch bestimmen
+    map_width = lines[0].length();
+    map_height = lines.length;
+  
+    updateLayout();
    
-   map_height = lines.length;
    
    for(int i = 0; i < lines.length; i++){
      char[] characters = lines[i].toCharArray();
@@ -15,7 +19,7 @@ class MapLoader{
        char character = characters[j];
        
        switch(character){
-         case 'x': out_of_map.add(new GridPosition(i, j)); break; // Position außerhalb der Karte
+         case 'x': out_of_map.add(new GridPosition(j, i)); break; // Position außerhalb der Karte
          
          case 'T': world_objects.add(new Teleporter(j, i, id)); free_tiles.add(new GridPosition(j, i)); id++; break;
          case 'o': world_objects.add(new Dot(j, i, 1)); free_tiles.add(new GridPosition(j,i)); break; // Punkt Groß
@@ -56,9 +60,5 @@ class MapLoader{
        }
      }
    }
-  }
-  
-  int getMapHeight(){
-    return map_height;
   }
 }

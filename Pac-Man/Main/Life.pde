@@ -60,6 +60,25 @@ class Life extends WorldObject{
     }
   }
   
+  void lost(){
+    if(!alive && !in_animation){
+      for(int i = 0; i < world_objects.size(); i++){
+        
+        WorldObject object = world_objects.get(i);
+        
+        if(object instanceof Life){
+          Life l = (Life) object;
+          
+          int[] position = l.getPosition();
+          
+          if(position[0] == getGridX() && position[1] == getGridY()){
+            world_objects.remove(i);
+          }
+        }
+      }
+    }
+  }
+  
   boolean getState(){return alive;}
   
   void display(){

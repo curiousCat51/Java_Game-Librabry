@@ -19,6 +19,7 @@ class Creature extends WorldObject {
   int targetGridY;
   
   float moveSpeed;
+  boolean teleported = false;
   
   Creature(WorldTypes type, int grid_x, int grid_y, float speed){
    super(type, grid_x, grid_y);
@@ -40,14 +41,22 @@ class Creature extends WorldObject {
       int position[] = getPosition();
       GridPosition next;
       
-      next = mapEndTP(position[0], position[1], chosen);      
+      next = TP(position[0], position[1], chosen);      
       
   
       if(canMove(chosen)){
   
-          updateDirection(chosen, image);
-  
-          startMovement(next.getX(), next.getY());
+        updateDirection(chosen, image);
+
+        if(teleported){
+            setPosition(next.getX(), next.getY());
+            moveProgress = 1.0;
+            teleported = false;
+        }
+        else{
+            startMovement(next.getX(), next.getY());
+        }
+        
       }
   }
   
@@ -168,24 +177,33 @@ class Creature extends WorldObject {
       return moveProgress < 1.0;
   }
   
-  // Teleport von einem zum anderen Ende der Karte
-  GridPosition mapEndTP(int pos_x, int pos_y, CreatureDirections chosen){
+  // Teleport von einer Position zu einer anderen
+  GridPosition TP(int pos_x, int pos_y, CreatureDirections chosen){
     int[] XY = moveDic(chosen);
-    GridPosition new_pos;
+    pos_x += XY[0];
+    pos_y += XY[1];
+    GridPosition new_pos = null;
     
-    if(getType() == WorldTypes.PLAYER){
-      if(isAtSameTile(pos_x, pos_y, border_left.getX(), border_left.getY())){
-        new_pos = new GridPosition(border_right.getX() + XY[0], border_right.getY() + XY[1]);
-      }
-      else if(isAtSameTile(pos_x, pos_y, border_right.getX(), border_right.getY())){
-        new_pos = new GridPosition(border_left.getX() + XY[0], border_left.getY() + XY[1]);
-      }
-      else{
-        new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
+    for(WorldObject object : world_objects){
+     
+      if(object instanceof Teleporter){
+        Teleporter t = (Teleporter) object;
+        
+        if(!t.isActive()){
+          continue;
+        }
+        else{
+          int[] position = t.getPosition();
+          
+          if(pos_x == position[0] && pos_y == position[1]){
+            new_pos = t.TeleportTo();
+          }
+        }
       }
     }
-    else{
-      new_pos = new GridPosition(pos_x + XY[0], pos_y + XY[1]);
+    
+    if(new_pos == null){
+      new_pos = new GridPosition(pos_x, pos_y);
     }
     
     return new_pos;
@@ -197,6 +215,18 @@ class Creature extends WorldObject {
   
   // Gibt die aktuelle Richtung einer Creatur zurück
   CreatureDirections getDirection(){return this.direction;}
+  
+  void updateLayoutPosition(){
+  
+    // Bei einer Größenänderung Bewegung abschließen
+    moveProgress = 1.0;
+  
+    setPixelX(convertToPixel(grid_x));
+    setPixelY(convertToPixel(grid_y));
+  
+    targetGridX = grid_x;
+    targetGridY = grid_y;
+  }
   
   // Methode zum Anzeigen der Creatur
   void display(){

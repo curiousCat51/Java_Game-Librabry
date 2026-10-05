@@ -1,6 +1,7 @@
 class Teleporter extends WorldObject{
   NormalImage image_active;
   NormalImage image_inactive;
+  Teleporter t = null;
   
   boolean isActive = true;
   boolean isTeleporting = false;
@@ -31,13 +32,17 @@ class Teleporter extends WorldObject{
   }
   
   void useTP(){
-   setImageContainer(image_inactive);
-   isActive = false;
+    if(!isActive()){
+       setImageContainer(image_inactive);
+    }
+    else{
+      setImageContainer(image_active);
+    }
   }
   
   // Conection zwischen zwei Teleportern finden
   int[] findConnection(int i){
-    Teleporter t = null;
+    t = null;
     int[] position = {0,0};
     
     for(WorldObject object : world_objects){
@@ -45,7 +50,7 @@ class Teleporter extends WorldObject{
         t = (Teleporter) object;
         connect_id = t.getID();
         if(connect_id == i){
-          position = getPosition();
+          position = t.getPosition();
         }
       }
     }
@@ -57,25 +62,37 @@ class Teleporter extends WorldObject{
   void TPdeactivate(){
     isActive = false;
     timer.add(new Timer(timer_name + connect_id, 0, 60, 'i'));
+    useTP();
   }
   
   // Teleporter reaktivieren und cooldown zurücksetzen
   void TPreactivate(){
     for(int i = 0; i < timer.size(); i++){
       Timer ti = timer.get(i);
-      if(ti.getName() == timer_name + connect_id){
+      if(ti.timerName() == timer_name + connect_id){
         if(ti.isfinish()){
           timer.remove(i);
           isActive = true;
         }
       }
     }
+    useTP();
+  }
+  
+  void TPupdate(){
+    if(isActive()){
+      return;
+    }
+    
+    TPreactivate();
   }
   
   GridPosition TeleportTo(){
     if(!isActive()){
       return null;
     }
+    
+    TPdeactivate();
     
     int[] pos;
     
@@ -102,4 +119,8 @@ class Teleporter extends WorldObject{
   boolean isActive(){return isActive;}
   
   int getID(){return id;}
+  
+  void display(){
+    drawObject();
+  }
 }
