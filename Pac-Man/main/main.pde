@@ -1,89 +1,75 @@
-import processing.awt.PSurfaceAWT.SmoothCanvas;
-import javax.swing.JFrame;
-import java.awt.Dimension;
-// ==========================================
-// GRÖSSEN / LAYOUT
-// ==========================================
+import java.util.HashMap;
+import java.util.ArrayDeque;
 
-float SCALE = 2;
-float TILE_SIZE = 16 * SCALE;
+// ============================================================
+// Pac-Man - Processing-native Hauptsketch
+// ============================================================
+// Der Sketch verwendet bewusst keine static-Referenzen.
+// Gemeinsamer Zustand liegt in den normalen Sketch-Variablen.
 
-// Grundgeschwindigkeit pro Tile
-float PLAYER_SPEED = 0.6f * SCALE;
-float ENEMY_SPEED = 0.6f * SCALE;
+int BASE_TILE_SIZE = 16;
+float CREATURE_PIXELS_PER_FRAME = 0.6f;
+float ANIMATION_SPEED = 0.1f;
 
-// Größe des Informationsbereichs rechts
+int POWER_MODE_DURATION_FRAMES = 600;
+int FRUIT_SPAWN_DOT_COUNT = 70;
+int BONUS_LIFE_SCORE = 10000;
+int INITIAL_LIVES = 3;
+int MAX_HUD_LIVES = 3;
+
+float LAYOUT_MARGIN = 20;
+float SIDE_PANEL_MIN_WIDTH = 180;
+float SIDE_PANEL_MAX_WIDTH = 320;
+
+float SCALE = 1;
+float TILE_SIZE = BASE_TILE_SIZE;
+float PLAYER_SPEED = CREATURE_PIXELS_PER_FRAME;
+float ENEMY_SPEED = CREATURE_PIXELS_PER_FRAME;
+
 float sidePanelWidth;
-
-// Position der Map auf dem Bildschirm
 float mapOffsetX;
 float mapOffsetY;
 
-// Abstände um die Map
-float layoutMargin = 20;
-
-// Mapgröße
 int map_width;
 int map_height;
 
-float previousWidth;
-float previousHeight;
-
-// Geschwindigkeit von Animationen
-float ANIMATION_SPEED = 0.1f;
-
-// Liste der Objekte (Spieler, Wände, Gegner, ...)
 ArrayList<WorldObject> world_objects;
-
-// Liste der Freien Tiles
 ArrayList<GridPosition> free_tiles;
-
-// Liste der Tiles welche nicht erreichbar sein sollten
 ArrayList<GridPosition> out_of_map;
-
-// Liste der Timer
 ArrayList<Timer> timer;
+ArrayList<Enemy> enemies;
 
-// Objekt zum handling von Eingaben 
+boolean[][] blocked_tiles;
+
+Player player;
 KeyHandler EventListener;
+Screens screen;
+HUD hud;
+ImageCache imageCache;
 
-GridPosition score_position;
-
-// Punkte
 int score = 0;
-
-// Anzahl der gesammelten Dots
+int ghost_score = 200;
 int dot_count = 0;
+int total_dot_count = 0;
 
-// Dot Effekte
 boolean powerMode = false;
 int powerTimer = 0;
 
 boolean fruit_spawned = false;
+int fruit_pos_x = -1;
+int fruit_pos_y = -1;
 
-// Leben des Spielers
-int lifes = 3;
-int last_life_x = 0;
-int leben_erstellt = 0;
-
-// Bereits vergebene Bonusleben
+int lifes = INITIAL_LIVES;
 int bonus_lebenS = 0;
+int fruit_count = 0;
+int[] fruit_counts = new int[8];
 
 boolean game_over = false;
+boolean victory = false;
 
-Screens screen = new Screens();
-// ==========================================
-// 2. SETUP (Initialisierung)
-// ==========================================
-void setup(){
-
-  size(1024, 1024);
+void setup() {
+  size(1024, 768);
   surface.setResizable(true);
-  
-  SmoothCanvas canvas = (SmoothCanvas) surface.getNative();
-  JFrame frame = (JFrame) canvas.getFrame();
-
-  frame.setMinimumSize(new Dimension(800, 600));
 
   imageMode(CENTER);
   noSmooth();
@@ -92,207 +78,215 @@ void setup(){
   free_tiles = new ArrayList<GridPosition>();
   out_of_map = new ArrayList<GridPosition>();
   timer = new ArrayList<Timer>();
+  enemies = new ArrayList<Enemy>();
 
-  // Map laden
-  new MapLoader(world_objects);
-
-  // Layout anhand der geladenen Map berechnen
-  updateLayout();
-
+  imageCache = new ImageCache();
   EventListener = new KeyHandler();
+  screen = new Screens();
 
-  // TODO:
-  // Die Lebensanzeige  später in den rechten Informationsbereich verschieben
-  previousWidth = width;
-  previousHeight = height;
+  MapLoader loader = new MapLoader(world_objects);
+  loader.loadMap("data/map/map1.txt");
+
+  updateLayout();
+  hud = new HUD();
+
 }
 
-// ==========================================
-// DYNAMISCHES LAYOUT
-// ==========================================
+// ============================================================
+// Layout / Responsive Scaling
+// ============================================================
 
-void updateLayout(){
-
-  if(map_width <= 0 || map_height <= 0){
+void updateLayout() {
+  if (map_width <= 0 || map_height <= 0) {
     return;
   }
 
-  // Rechter Bereich für Score, Leben usw.
-  sidePanelWidth = constrain(width * 0.25f, 180, 320);
+  sidePanelWidth = constrain(
+    width * 0.25f,
+    SIDE_PANEL_MIN_WIDTH,
+    SIDE_PANEL_MAX_WIDTH
+  );
 
-  // Platz, der der Map zur Verfügung steht
-  float availableWidth = width - sidePanelWidth;
-  float availableHeight = height;
+  float availableWidth = max(1, width - sidePanelWidth);
+  float availableHeight = max(1, height);
 
-  // Größe eines Tiles so wählen,
-  // dass die komplette Map hineinpasst
-  TILE_SIZE = min((availableWidth - layoutMargin * 2) / map_width,(availableHeight - layoutMargin * 2) / map_height);
+  float tileFromWidth = (availableWidth - 2 * LAYOUT_MARGIN) / map_width;
+  float tileFromHeight = (availableHeight - 2 * LAYOUT_MARGIN) / map_height;
 
-  // Die Bilder sind 16x16 Pixel groß
-  SCALE = TILE_SIZE / 16.0f;
+  // Ein einziger Skalierungsfaktor verhindert Verzerrungen.
+  TILE_SIZE = max(1, min(tileFromWidth, tileFromHeight));
+  SCALE = TILE_SIZE / BASE_TILE_SIZE;
 
-  // Geschwindigkeiten an die neue Größe anpassen
-  PLAYER_SPEED = 0.6f * SCALE;
-  ENEMY_SPEED = 0.6f * SCALE;
-
-  // Tatsächliche Größe der Map
   float mapPixelWidth = map_width * TILE_SIZE;
   float mapPixelHeight = map_height * TILE_SIZE;
 
-  // Map innerhalb des linken Bereiches zentrieren
-  mapOffsetX = (availableWidth - mapPixelWidth) / 2.0f;
-  mapOffsetY = (height - mapPixelHeight) / 2.0f;
+  // Die Map wird ausschließlich im linken Spielfeldbereich zentriert.
+  mapOffsetX = (availableWidth - mapPixelWidth) * 0.5f;
+  mapOffsetY = (availableHeight - mapPixelHeight) * 0.5f;
 }
 
-// ==========================================
-// 3. DRAW-LOOP (Hauptschleife)
-// ==========================================
-void draw(){
-  
-  if(width != previousWidth || height != previousHeight){
+void windowResized() {
+  updateLayout();
 
-    updateLayout();
-  
-    for(WorldObject object : world_objects){
-      object.updateLayoutPosition();
-    }
-  
-    previousWidth = width;
-    previousHeight = height;
+  // Ein Resize verändert weder Grid-Position noch Bewegungsfortschritt.
+  // Jede Klasse berechnet lediglich ihre neuen Pixelkoordinaten.
+  for (WorldObject object : world_objects) {
+    object.updateLayoutPosition();
   }
-  
+}
+
+// ============================================================
+// Hauptschleife
+// ============================================================
+
+void draw() {
   background(0);
-  
-  if(game_over){
+
+  updateTimers();
+
+  if (game_over) {
     screen.GAME_OVER();
+    hud.display();
+    return;
   }
-  else{
-    
-    newFruit();
-    
-    // Darstellung jedes einzelnen Objektes
-    for(int i = 0; i < world_objects.size(); i++){
-  
-      WorldObject object = world_objects.get(i);
-  
-      if(object instanceof Teleporter){
-        Teleporter t = (Teleporter) object;
-        
-        t.TPupdate();
-        t.display();
-      }
-      else if(object instanceof Enemy){
-  
-          Enemy e = (Enemy) object;
-  
-          e.move();
-          e.display();
-      }
-      else if(object instanceof Player){
-  
-          Player p = (Player) object;
-  
-          p.move();
-          p.display();
-      }
-      else if(object instanceof Life){
-        
-        Life l = (Life) object;
-        l.updateAnimation();
-        l.display();
-      }
-      else if(object instanceof Fruits){
-        Fruits f = (Fruits) object;
-        
-        f.display();
-      }
-      else if(object instanceof Dot){
-        Dot d = (Dot) object;
-        
-        d.display();
-      }
-      else {
-        object.drawObject();
-      }
-    }
-    
-    if(powerMode){
-  
-      powerTimer--;
-  
-      if(powerTimer <= 0){
-          powerMode = false;
-      }
-    }
-    pushMatrix();
-    color(0, 0, 0);
-    //text("Score: " + score + "\n Dots collected: " + dot_count, score_position.getX(), score_position.getY());
-    popMatrix();
-    
-    for(Timer time : timer){
-      pushMatrix();
-      color(0, 0, 0);
-      //text(time.timerName() + time.getTime(), score_position.getX(), 3);
-      popMatrix();
+
+  if (victory) {
+    screen.VICTORY();
+    hud.display();
+    return;
+  }
+
+  updateGame();
+  renderGame();
+
+  hud.updateAnimations();
+  hud.display();
+
+  updateGameState();
+}
+
+void updateGame() {
+  updateTeleporters();
+  newFruit();
+
+  // Erst bewegen, danach rendern. Dadurch können Collectables entfernt
+  // werden, ohne dass während eines Enhanced-for-Loops die Liste verändert wird.
+  if (player != null) {
+    player.move();
+  }
+
+  for (Enemy enemy : enemies) {
+    enemy.move();
+  }
+
+  updatePowerMode();
+}
+
+void updateTeleporters() {
+  for (WorldObject object : world_objects) {
+    if (object instanceof Teleporter) {
+      ((Teleporter) object).TPupdate();
     }
   }
-  
-  if(isGameOver()){
+}
+
+void renderGame() {
+  for (WorldObject object : world_objects) {
+    object.display();
+  }
+}
+
+void updateTimers() {
+  for (int i = timer.size() - 1; i >= 0; i--) {
+    Timer current = timer.get(i);
+    current.update();
+
+    if (current.isFinished()) {
+      // Teleporter-Timer werden von Teleporter.TPupdate() ausgewertet.
+      // Andere Timer können hier künftig ebenfalls verwaltet werden.
+    }
+  }
+}
+
+void updatePowerMode() {
+  if (!powerMode) {
+    return;
+  }
+
+  powerTimer--;
+
+  if (powerTimer > 0) {
+    return;
+  }
+
+  powerMode = false;
+  ghost_score = 200;
+
+  for (Enemy enemy : enemies) {
+    enemy.endFrightened();
+  }
+}
+
+void updateGameState() {
+  if (lifes <= 0) {
     game_over = true;
+  } else if (total_dot_count > 0 && dot_count >= total_dot_count) {
+    victory = true;
   }
 }
 
-// ==========================================
-// 4. TASTATUR-STEUERUNG
-// ==========================================
+// ============================================================
+// Input
+// ============================================================
 
-// Wenn eine Taste gedrückt wird,...
-void keyPressed(){
-  // ...wird die Eingabe gehandelt und...
-  EventListener.Pressed();
-}
-
-// Wenn eine Taste losgelassen wird,...
-void keyReleased(){
-  // ...wird die Eingabe gehandelt
-  EventListener.Released();
-}
-
-boolean isGameOver(){
-  if(lifes == 0){
-    return true;
+void keyPressed() {
+  if (EventListener != null) {
+    EventListener.Pressed();
   }
-  
-  return false;
 }
 
-void newFruit(){  
-  if(dot_count == 70 && !fruit_spawned){
-    Fruits fruit = new Fruits(13, 16);
-    world_objects.add(fruit);
+void keyReleased() {
+  if (EventListener != null) {
+    EventListener.Released();
+  }
+}
+
+// ============================================================
+// Spielregeln / Utility
+// ============================================================
+
+void newFruit() {
+  if (fruit_pos_x < 0 || fruit_pos_y < 0) {
+    return;
+  }
+
+  if (dot_count >= FRUIT_SPAWN_DOT_COUNT && !fruit_spawned) {
+    world_objects.add(new Fruits(fruit_pos_x, fruit_pos_y));
     fruit_spawned = true;
   }
 }
 
 void checkBonusLife() {
-  while (score >= (bonus_lebenS + 1) * 10000) {
-    lifes++;
+  while (score >= (bonus_lebenS + 1) * BONUS_LIFE_SCORE) {
     bonus_lebenS++;
-    updateHearts();
+    hud.addLife();
   }
 }
 
-void updateHearts() {
-  // Alte Herzobjekte entfernen
-  for (int i = world_objects.size() - 1; i >= 0; i--) {
-    if (world_objects.get(i) instanceof Life) {
-      world_objects.remove(i);
-    }
-  }
+void startPowerMode() {
+  powerMode = true;
+  powerTimer = POWER_MODE_DURATION_FRAMES;
+  ghost_score = 200;
 
-  // Neue Herzen entsprechend der Lebensanzahl erzeugen
-  for (int i = last_life_x; i < lifes; i++) {
-    Life life = new Life(2, map_width + i * 2);
-    world_objects.add(life);
+  for (Enemy enemy : enemies) {
+    enemy.startFrightened();
   }
+}
+
+void removeWorldObject(WorldObject object) {
+  world_objects.remove(object);
+}
+
+boolean isGameOver() {
+  return lifes <= 0;
 }

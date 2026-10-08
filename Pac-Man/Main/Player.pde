@@ -1,183 +1,132 @@
-class Player extends Creature{
+class Player extends Creature {
   AnimationImage image_right;
   AnimationImage image_left;
-  
-  int grid_x;
-  int grid_y;
-  
+
   int spawn_x;
   int spawn_y;
-  
   boolean enemy_hit = false;
-  
-  WorldTypes[] collect = {
-    WorldTypes.FRUIT, WorldTypes.DOT
-  };
-  
-  Player(int grid_x, int grid_y, float speed){
+
+  Player(int grid_x, int grid_y, float speed) {
     super(WorldTypes.PLAYER, grid_x, grid_y, speed);
-    
-    image_right = new AnimationImage("data/images/Pac-Man/pac-man_walk_right_", 4, ANIMATION_SPEED);
-    image_left = new AnimationImage("data/images/Pac-Man/pac-man_walk_left_", 4, ANIMATION_SPEED);
-    
+
+    image_right = new AnimationImage(
+      "data/images/Pac-Man/pac-man_walk_right_", 4, ANIMATION_SPEED
+    );
+    image_left = new AnimationImage(
+      "data/images/Pac-Man/pac-man_walk_left_", 4, ANIMATION_SPEED
+    );
+
     setImageContainer(image_left);
-    
-    this.grid_x = grid_x;
-    this.grid_y = grid_y;
-    
+
     spawn_x = grid_x;
     spawn_y = grid_y;
-    
+
     collision.setCollisionEnemy(WorldTypes.ENEMY);
-    collision.setCollisionCollect(collect);
+    collision.setCollisionCollect(new WorldTypes[] {
+      WorldTypes.FRUIT,
+      WorldTypes.DOT
+    });
   }
-  
-  void move(){
 
-    int[] position = getPosition();
-    
-    if(collision.checkForEnemy(position[0], position[1]) && !enemy_hit){
-      
-      enemy_hit = true;
-      
-      for(WorldObject object : world_objects){
-        
-        if(object instanceof Life){
-          
-          Life life = (Life) object;
-          
-          if(life.getState() && !powerMode){
-            
-            life.damage();
-            break;
-            
-          }
-        }
-      }
-    }
-    else{
-      enemy_hit = false;
-    }
-    
+  void move() {
+    handleEnemyCollision();
     collect();
-    
-    // Eingabe auswerten
 
-    if(EventListener.getKeyUP()){
-        wish_direction = CreatureDirections.HOCH;
-    }
+    readInput();
 
-    if(EventListener.getKeyDOWN()){
-        wish_direction = CreatureDirections.RUNTER;
-    }
-
-    if(EventListener.getKeyLEFT()){
-        wish_direction = CreatureDirections.LINKS;
-    }
-
-    if(EventListener.getKeyRIGHT()){
-        wish_direction = CreatureDirections.RECHTS;
-    }
-
-
-    // Aktuelle Bewegung weiterführen
-
+    // Eine laufende Bewegung wird zuerst vollständig fortgesetzt.
     updateMovement();
-
-    if(isMoving()){
-        return;
+    if (isMoving()) {
+      return;
     }
 
-
-    // Gewünschte Richtung ausprobieren
-
-    if(wish_direction != CreatureDirections.NEUTRAL &&
-       canMove(wish_direction)){
-
-        switch(wish_direction){
-
-            case HOCH:
-                move(wish_direction, image_left);
-                break;
-
-            case RUNTER:
-                move(wish_direction, image_right);
-                break;
-
-            case LINKS:
-                move(wish_direction, image_left);
-                break;
-
-            case RECHTS:
-                move(wish_direction, image_right);
-                break;
-
-            case NEUTRAL:
-                break;
-        }
-
-        return;
+    // Wunschrichtung hat Vorrang.
+    if (wish_direction != CreatureDirections.NEUTRAL &&
+        canMove(wish_direction)) {
+      startMoveWithDirection(wish_direction);
+      return;
     }
 
-
-    // Falls Wunschrichtung blockiert ist:
-    // aktuelle Richtung weiterlaufen
-
-    if(direction != CreatureDirections.NEUTRAL && canMove(direction)){
-
-        switch(direction){
-
-            case HOCH:
-                move(direction, image_left);
-                break;
-
-            case RUNTER:
-                move(direction, image_right);
-                break;
-
-            case LINKS:
-                move(direction, image_left);
-                break;
-
-            case RECHTS:
-                move(direction, image_right);
-                break;
-
-            case NEUTRAL:
-                break;
-        }
+    // Sonst die aktuelle Richtung beibehalten.
+    if (direction != CreatureDirections.NEUTRAL && canMove(direction)) {
+      startMoveWithDirection(direction);
     }
   }
-  
-  CreatureDirections getWishDirection(){return this.wish_direction;}
-  
-  // Methode zum Sammeln von Collectables
-  void collect(){
-    
-    int[] position = getPosition();
-    
-    
-    for(WorldObject object : world_objects){
-      
-      if(object.getGridX() == position[0] && object.getGridY() == position[1]){
-        
-        if(object.getType() == WorldTypes.DOT){
-          Dot dot = (Dot) object;
-          
-          dot.collect(position[0], position[1]);
-          checkBonusLife();
-          break;
-        }
-        
-        if(object.getType() == WorldTypes.FRUIT){
-          Fruits fruit = (Fruits) object;
-          
-          fruit.collect(position[0], position[1]);
-          checkBonusLife();
-          break;
-        }
+
+  void readInput() {
+    if (EventListener.getKeyUP()) {
+      wish_direction = CreatureDirections.HOCH;
+    } else if (EventListener.getKeyDOWN()) {
+      wish_direction = CreatureDirections.RUNTER;
+    } else if (EventListener.getKeyLEFT()) {
+      wish_direction = CreatureDirections.LINKS;
+    } else if (EventListener.getKeyRIGHT()) {
+      wish_direction = CreatureDirections.RECHTS;
+    }
+  }
+
+  void startMoveWithDirection(CreatureDirections chosen) {
+    ImageContainer image = getImageForDirection(chosen);
+    move(chosen, image);
+  }
+
+  ImageContainer getImageForDirection(CreatureDirections chosen) {
+    if (chosen == CreatureDirections.LINKS || chosen == CreatureDirections.HOCH) {
+      return image_left;
+    }
+    return image_right;
+  }
+
+  void handleEnemyCollision() {
+    if (!collision.checkForEnemy(grid_x, grid_y)) {
+      enemy_hit = false;
+      return;
+    }
+
+    Enemy enemy = collision.hit_enemy;
+    if (enemy == null || enemy_hit) {
+      return;
+    }
+
+    enemy_hit = true;
+
+    if (powerMode && enemy.frightened && !enemy.caught) {
+      enemy.getCaught();
+      score += ghost_score;
+      ghost_score *= 2;
+      checkBonusLife();
+      return;
+    }
+
+    if (!powerMode) {
+      hud.loseLife();
+      // Spieler bleibt logisch auf dem aktuellen Tile. Eine vollständige
+      // Respawn-Animation kann später ergänzt werden.
+    }
+  }
+
+  void collect() {
+    for (int i = world_objects.size() - 1; i >= 0; i--) {
+      WorldObject object = world_objects.get(i);
+
+      if (object.getGridX() != grid_x || object.getGridY() != grid_y) {
+        continue;
+      }
+
+      if (object instanceof Dot) {
+        ((Dot) object).collect();
+        checkBonusLife();
+        return;
+      }
+
+      if (object instanceof Fruits) {
+        ((Fruits) object).collect();
+        return;
       }
     }
   }
-  
+
+  CreatureDirections getWishDirection() {
+    return wish_direction;
+  }
 }

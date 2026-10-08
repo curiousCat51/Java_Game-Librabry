@@ -1,34 +1,29 @@
-class Timer{
-  
+class Timer {
   String name;
   int end;
-  char direct;
+  char direction;
   int current;
-  
-  Timer(String name, int start, int end, char count_direct){
+
+  Timer(String name, int start, int end, char countDirection) {
     this.name = name;
     current = start;
     this.end = end;
-    direct = count_direct;
+    direction = countDirection;
   }
-  
-  void update(){
-    if(direct == 'i'){
+
+  void update() {
+    if (direction == 'i') {
       current++;
-    }
-    else{
+    } else {
       current--;
     }
   }
-  
-  int getTime(){return current;}
-  
-  boolean isfinish(){
-    if(current == end){
-      return true;
-    }
-    return false;
+
+  int getTime() { return current; }
+
+  boolean isFinished() {
+    return direction == 'i' ? current >= end : current <= end;
   }
-  
-  String timerName(){return name;}
+
+  String timerName() { return name; }
 }

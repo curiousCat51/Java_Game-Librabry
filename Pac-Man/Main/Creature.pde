@@ -1,235 +1,215 @@
 class Creature extends WorldObject {
-  CreatureDirections direction;
-  CreatureDirections wish_direction;
+  CreatureDirections direction = CreatureDirections.NEUTRAL;
+  CreatureDirections wish_direction = CreatureDirections.NEUTRAL;
+
   CollisionResult collision = new CollisionResult();
-  GridPosition border_left = new GridPosition(0, 13);
-  GridPosition border_right = new GridPosition(27, 13);
-  int grid_x;
-  int grid_y;
-  
-  float moveProgress = 1.0;
+
+  // Fortschritt zwischen movementStart und movementTarget: 0..1.
+  float moveProgress = 1.0f;
+
+  int movementStartGridX;
+  int movementStartGridY;
+  int targetGridX;
+  int targetGridY;
 
   float startPixelX;
   float startPixelY;
-  
   float targetPixelX;
   float targetPixelY;
-  
-  int targetGridX;
-  int targetGridY;
-  
+
+  // Pixel pro Frame in der Basis-Skalierung. Die tatsächliche
+  // Tile-Bewegung wird erst in updateMovement() über TILE_SIZE berechnet.
   float moveSpeed;
-  boolean teleported = false;
-  
-  Creature(WorldTypes type, int grid_x, int grid_y, float speed){
-   super(type, grid_x, grid_y);
-   direction = CreatureDirections.NEUTRAL;
-   wish_direction = CreatureDirections.NEUTRAL;
-   
-   moveSpeed = speed;
-   
-   collision.setCollisionFilter(WorldTypes.WALL);
-  }
-  
-  void changeDirection(CreatureDirections new_direction){
-    wish_direction= new_direction;
-  }
-  
-  void move(CreatureDirections chosen, ImageContainer image){
 
-      
-      int position[] = getPosition();
-      GridPosition next;
-      
-      next = TP(position[0], position[1], chosen);      
-      
-  
-      if(canMove(chosen)){
-  
-        updateDirection(chosen, image);
-
-        if(teleported){
-            setPosition(next.getX(), next.getY());
-            moveProgress = 1.0;
-            teleported = false;
-        }
-        else{
-            startMovement(next.getX(), next.getY());
-        }
-        
-      }
-  }
-  
-  // Richtung + Richtungsbild aktualisieren
-  void updateDirection(CreatureDirections choosen, ImageContainer image){
-    setImageContainer(image); 
-    direction = choosen;
-  }
-  
-  // Freie Richtung auswählen
-  CreatureDirections getFreeDirection(){
-
-      for(CreatureDirections dir : CreatureDirections.values()){
-  
-          if(dir == CreatureDirections.NEUTRAL){
-              continue;
-          }
-  
-          if(canMove(dir)){
-              return dir;
-          }
-      }
-  
-      return CreatureDirections.NEUTRAL;
-  }
-  
-  // Methode zur überprüfung, ob ein Tile in gewünschter Richtung frei ist
-  boolean canMove(CreatureDirections dir){
-
-    int[] XY = moveDic(dir);
-    int x = XY[0];
-    int y = XY[1];
-    
-    return collision.checkCollision(getGridX() + x, getGridY() + y);
-  }
-  
-  // Eigenes "Dictionary" für eine gewählte Richtung
-  int[] moveDic(CreatureDirections dir){
-    
-    int x = 0;
-    int y = 0;
-
-    if (dir == CreatureDirections.RECHTS) x = 1;
-    if (dir == CreatureDirections.LINKS)   x = -1;
-    if (dir == CreatureDirections.HOCH)    y = -1;
-    if (dir == CreatureDirections.RUNTER)  y = 1;
-    
-    return new int[]{x,y};
-  }
-  
-  // Ist eine Creatur am Spieler angekommen
-  boolean isAtPlayer(){
-
-      int[] position = getPosition();
-  
-      for(WorldObject object : world_objects){
-  
-          if(object instanceof Player){
-  
-              Player player = (Player) object;
-  
-              if(position[0] == player.getGridX() && position[1] == player.getGridY()){
-                  return true;
-              }
-          }
-      }
-  
-      return false;
-  }
-  
-  // Startet die Bewegung zwischen Tilemittelpunkten ohne von der mittleren Linie abzukommen
-  void startMovement(int targetX, int targetY){
-
-      startPixelX = getPixelX();
-      startPixelY = getPixelY();
-  
-      targetPixelX = convertToPixel(targetX);
-      targetPixelY = convertToPixel(targetY);
-  
-      targetGridX = targetX;
-      targetGridY = targetY;
-  
-      moveProgress = 0.0;
-  }
-  
- // Aktualisieren der Position zwischen Tilemittelpunkten
- void updateMovement(){
-
-      if(moveProgress >= 1.0){
-          return;
-      }
-  
-      moveProgress += moveSpeed / TILE_SIZE;
-  
-      if(moveProgress > 1.0){
-          moveProgress = 1.0;
-      }
-  
-      float newPixelX = startPixelX +
-          (targetPixelX - startPixelX) * moveProgress;
-  
-      float newPixelY = startPixelY +
-          (targetPixelY - startPixelY) * moveProgress;
-  
-      setPixelX((int)newPixelX);
-      setPixelY((int)newPixelY);
-  
-      if(moveProgress >= 1.0){
-  
-          setGridX(targetGridX);
-          setGridY(targetGridY);
-      }
-  }
-  
-  // Überprüft ob eine Creatur sich grade zwischen zwei Tiles bewegt oder nicht
-  boolean isMoving(){
-
-      return moveProgress < 1.0;
-  }
-  
-  // Teleport von einer Position zu einer anderen
-  GridPosition TP(int pos_x, int pos_y, CreatureDirections chosen){
-    int[] XY = moveDic(chosen);
-    pos_x += XY[0];
-    pos_y += XY[1];
-    GridPosition new_pos = null;
-    
-    for(WorldObject object : world_objects){
-     
-      if(object instanceof Teleporter){
-        Teleporter t = (Teleporter) object;
-        
-        if(!t.isActive()){
-          continue;
-        }
-        else{
-          int[] position = t.getPosition();
-          
-          if(pos_x == position[0] && pos_y == position[1]){
-            new_pos = t.TeleportTo();
-          }
-        }
-      }
-    }
-    
-    if(new_pos == null){
-      new_pos = new GridPosition(pos_x, pos_y);
-    }
-    
-    return new_pos;
-  }
-  
-  boolean isAtSameTile(int pos_x1, int pos_y1, int pos_x2, int pos_y2){
-    return pos_x1 == pos_x2 && pos_y1 == pos_y2;
-  }
-  
-  // Gibt die aktuelle Richtung einer Creatur zurück
-  CreatureDirections getDirection(){return this.direction;}
-  
-  void updateLayoutPosition(){
-  
-    // Bei einer Größenänderung Bewegung abschließen
-    moveProgress = 1.0;
-  
-    setPixelX(convertToPixel(grid_x));
-    setPixelY(convertToPixel(grid_y));
-  
+  Creature(WorldTypes type, int grid_x, int grid_y, float speed) {
+    super(type, grid_x, grid_y);
+    moveSpeed = speed;
+    movementStartGridX = grid_x;
+    movementStartGridY = grid_y;
     targetGridX = grid_x;
     targetGridY = grid_y;
+    collision.setCollisionFilter(WorldTypes.WALL);
   }
-  
-  // Methode zum Anzeigen der Creatur
-  void display(){
+
+  void changeDirection(CreatureDirections newDirection) {
+    wish_direction = newDirection;
+  }
+
+  void move(CreatureDirections chosen, ImageContainer image) {
+    if (chosen == CreatureDirections.NEUTRAL || !canMove(chosen)) {
+      return;
+    }
+
+    updateDirection(chosen, image);
+
+    GridPosition next = getTeleportDestination(grid_x, grid_y, chosen);
+
+    if (next == null) {
+      return;
+    }
+
+    if (next.getX() != grid_x + directionDeltaX(chosen) ||
+        next.getY() != grid_y + directionDeltaY(chosen)) {
+      // Teleporter: logisch direkt am Ziel ankommen.
+      setPosition(next.getX(), next.getY());
+      moveProgress = 1.0f;
+      movementStartGridX = grid_x;
+      movementStartGridY = grid_y;
+      targetGridX = grid_x;
+      targetGridY = grid_y;
+      return;
+    }
+
+    startMovement(next.getX(), next.getY());
+  }
+
+  void updateDirection(CreatureDirections newDirection, ImageContainer image) {
+    setImageContainer(image);
+    direction = newDirection;
+  }
+
+  CreatureDirections getFreeDirection() {
+    CreatureDirections[] directions = {
+      CreatureDirections.HOCH,
+      CreatureDirections.RUNTER,
+      CreatureDirections.LINKS,
+      CreatureDirections.RECHTS
+    };
+
+    for (CreatureDirections candidate : directions) {
+      if (canMove(candidate)) {
+        return candidate;
+      }
+    }
+
+    return CreatureDirections.NEUTRAL;
+  }
+
+  boolean canMove(CreatureDirections dir) {
+    if (dir == CreatureDirections.NEUTRAL) {
+      return false;
+    }
+
+    int nextX = grid_x + directionDeltaX(dir);
+    int nextY = grid_y + directionDeltaY(dir);
+    return collision.checkCollision(nextX, nextY);
+  }
+
+  int directionDeltaX(CreatureDirections dir) {
+    if (dir == CreatureDirections.RECHTS) return 1;
+    if (dir == CreatureDirections.LINKS) return -1;
+    return 0;
+  }
+
+  int directionDeltaY(CreatureDirections dir) {
+    if (dir == CreatureDirections.RUNTER) return 1;
+    if (dir == CreatureDirections.HOCH) return -1;
+    return 0;
+  }
+
+  int[] moveDic(CreatureDirections dir) {
+    return new int[] {directionDeltaX(dir), directionDeltaY(dir)};
+  }
+
+  boolean isAtPlayer() {
+    return player != null &&
+           grid_x == player.getGridX() &&
+           grid_y == player.getGridY();
+  }
+
+  void startMovement(int targetX, int targetY) {
+    movementStartGridX = grid_x;
+    movementStartGridY = grid_y;
+
+    startPixelX = convertToPixel(movementStartGridX);
+    startPixelY = convertToPixel(movementStartGridY);
+    targetPixelX = convertToPixel(targetX);
+    targetPixelY = convertToPixel(targetY);
+
+    targetGridX = targetX;
+    targetGridY = targetY;
+    moveProgress = 0.0f;
+  }
+
+  void updateMovement() {
+    if (moveProgress >= 1.0f) {
+      return;
+    }
+
+    // moveSpeed ist Pixel/Frame. In Tile-Fortschritt umrechnen, damit
+    // die Bewegung nicht durch eine falsche Einheit vervielfacht wird.
+    float progressPerFrame = (TILE_SIZE > 0) ? (moveSpeed * SCALE / TILE_SIZE) : 0;
+    moveProgress = min(1.0f, moveProgress + progressPerFrame);
+
+    pixel_x = lerp(startPixelX, targetPixelX, moveProgress);
+    pixel_y = lerp(startPixelY, targetPixelY, moveProgress);
+
+    if (moveProgress >= 1.0f) {
+      grid_x = targetGridX;
+      grid_y = targetGridY;
+      pixel_x = convertToPixel(grid_x);
+      pixel_y = convertToPixel(grid_y);
+    }
+  }
+
+  boolean isMoving() {
+    return moveProgress < 1.0f;
+  }
+
+  GridPosition getTeleportDestination(int posX, int posY, CreatureDirections chosen) {
+    int nextX = posX + directionDeltaX(chosen);
+    int nextY = posY + directionDeltaY(chosen);
+
+    if (nextX < 0 || nextX >= map_width || nextY < 0 || nextY >= map_height) {
+      return null;
+    }
+
+    Teleporter teleporter = findTeleporterAt(nextX, nextY);
+    if (teleporter == null || !teleporter.isActive()) {
+      return new GridPosition(nextX, nextY);
+    }
+
+    GridPosition destination = teleporter.TeleportTo();
+    return destination == null ? new GridPosition(nextX, nextY) : destination;
+  }
+
+  Teleporter findTeleporterAt(int x, int y) {
+    for (WorldObject object : world_objects) {
+      if (object instanceof Teleporter &&
+          object.getGridX() == x && object.getGridY() == y) {
+        return (Teleporter) object;
+      }
+    }
+    return null;
+  }
+
+  boolean isAtSameTile(int x1, int y1, int x2, int y2) {
+    return x1 == x2 && y1 == y2;
+  }
+
+  CreatureDirections getDirection() {
+    return direction;
+  }
+
+  void updateLayoutPosition() {
+    if (!isMoving()) {
+      pixel_x = convertToPixel(grid_x);
+      pixel_y = convertToPixel(grid_y);
+      return;
+    }
+
+    // Resize darf die Bewegung NICHT abschließen. Stattdessen werden nur
+    // die Pixel-Endpunkte neu berechnet und derselbe Fortschritt beibehalten.
+    startPixelX = convertToPixel(movementStartGridX);
+    startPixelY = convertToPixel(movementStartGridY);
+    targetPixelX = convertToPixel(targetGridX);
+    targetPixelY = convertToPixel(targetGridY);
+
+    pixel_x = lerp(startPixelX, targetPixelX, moveProgress);
+    pixel_y = lerp(startPixelY, targetPixelY, moveProgress);
+  }
+
+  void display() {
     drawObject();
   }
 }

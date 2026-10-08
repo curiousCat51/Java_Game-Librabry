@@ -1,3 +1,9 @@
-enum WorldTypes{
- PLAYER, ENEMY, WALL, DOT, FRUIT, LIFE, TELEPORT
+enum WorldTypes {
+  PLAYER,
+  ENEMY,
+  WALL,
+  DOT,
+  FRUIT,
+  LIFE,
+  TELEPORT
 }

@@ -1,3 +1,7 @@
-enum CreatureDirections{
- HOCH, RUNTER, LINKS, RECHTS, NEUTRAL
+enum CreatureDirections {
+  HOCH,
+  RUNTER,
+  LINKS,
+  RECHTS,
+  NEUTRAL
 }

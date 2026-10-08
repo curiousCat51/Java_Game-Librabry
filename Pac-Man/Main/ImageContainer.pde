@@ -1,3 +1,3 @@
-interface ImageContainer{
- abstract void drawImage(float x, float y); 
+interface ImageContainer {
+  void drawImage(float x, float y);
 }

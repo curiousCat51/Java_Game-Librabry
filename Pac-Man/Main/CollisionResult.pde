@@ -1,130 +1,77 @@
-class CollisionResult{
+class CollisionResult {
   WorldTypes collision_filter;
   WorldTypes[] collision_collect;
   WorldTypes collision_enemy;
-  
-  CollisionResult(){
-  }
-  
-  void setCollisionFilter(WorldTypes filter){
+  Enemy hit_enemy;
+
+  void setCollisionFilter(WorldTypes filter) {
     collision_filter = filter;
   }
-  
-  void setCollisionCollect(WorldTypes[] collect){
-    
-    collision_collect = new WorldTypes[collect.length];
-    
-    for(int i = 0; i < collect.length; i++){
-      collision_collect[i] = collect[i];
-    }
+
+  void setCollisionCollect(WorldTypes[] collect) {
+    collision_collect = collect == null ? null : collect.clone();
   }
-  
-  void setCollisionEnemy(WorldTypes enemy){
+
+  void setCollisionEnemy(WorldTypes enemy) {
     collision_enemy = enemy;
   }
-  
-  
-  // Collision check für Wände und Out of Map Elemente
-  boolean checkCollision(int move_x, int move_y){
 
-  // Außerhalb der geladenen Map?
-  if(move_x < 0 || move_x >= map_width || move_y < 0 || move_y >= map_height){
-    return false;
-  }
-
-  // Explizit als nicht begehbar markiertes Tile?
-  if(!isBlockedByMap(move_x, move_y)){
-    return false;
-  }
-
-  // Wände prüfen
-  for(WorldObject object : world_objects){
-
-    if(object.getType() == collision_filter){
-
-      Wall wall = (Wall) object;
-
-      if(!wall.isPassThrough()){
-
-        int[] position = wall.getPosition();
-
-        int wall_x = position[0];
-        int wall_y = position[1];
-
-        if(move_x == wall_x && move_y == wall_y){
-          return false;
-        }
-      }
+  // Statische Kollisionen werden über blocked_tiles geprüft. Dadurch ist
+  // die Abfrage O(1) und nicht mehr abhängig von der Anzahl der Wall-Objekte.
+  boolean checkCollision(int moveX, int moveY) {
+    if (moveX < 0 || moveX >= map_width || moveY < 0 || moveY >= map_height) {
+      return false;
     }
-  }
 
-  return true;
-}
-  
-  // Außerhalb der Map?
-  boolean isBlockedByMap(int next_x, int next_y){
-    
-    for(GridPosition out : out_of_map){
-        
-      if(next_x == out.getX() && next_y == out.getY()){
-         return false; 
-      }
+    if (blocked_tiles != null && blocked_tiles[moveY][moveX]) {
+      return false;
     }
+
     return true;
   }
-  
-  // Collision check für Gegner
-  boolean checkForEnemy(int move_x, int move_y){
-    
-    for(WorldObject object : world_objects){
-      
-      if(object.getType() == collision_enemy){
-        
-        Enemy enemy = (Enemy) object;
-        
-        int[] position = enemy.getPosition();
-        int enemy_x = position[0];
-        int enemy_y = position[1];
-        
-        if(move_x == enemy_x && move_y == enemy_y){
-          return true;
-        }
+
+  boolean isBlockedByMap(int x, int y) {
+    if (x < 0 || x >= map_width || y < 0 || y >= map_height) {
+      return true;
+    }
+
+    return blocked_tiles != null && blocked_tiles[y][x];
+  }
+
+  boolean checkForEnemy(int moveX, int moveY) {
+    hit_enemy = null;
+
+    for (Enemy enemy : enemies) {
+      if (!enemy.active && !enemy.caught) {
+        continue;
+      }
+
+      if (enemy.getGridX() == moveX && enemy.getGridY() == moveY) {
+        hit_enemy = enemy;
+        return true;
       }
     }
+
     return false;
   }
-  
-  // Collision check für Collectables
-  boolean checkForCollect(int move_x, int move_y){
-    
-    for(WorldObject object : world_objects){
-      
-      if(object.getType() == collision_collect[0]){
-        // FRUITS
-        Fruits fruit = (Fruits) object;
-        
-        int[] position = fruit.getPosition();
-        int fruit_x = position[0];
-        int fruit_y = position[1];
-        
-        if(move_x == fruit_x && move_y == fruit_y){
-          return true;
-        }
+
+  boolean checkForCollect(int moveX, int moveY) {
+    if (collision_collect == null) {
+      return false;
+    }
+
+    for (WorldObject object : world_objects) {
+      if (object.getGridX() != moveX || object.getGridY() != moveY) {
+        continue;
       }
-      
-      if(object.getType() == collision_collect[1]){
-        // DOT
-        Dot dot = (Dot) object;
-        
-        int[] position = dot.getPosition();
-        int dot_x = position[0];
-        int dot_y = position[1];
-        
-        if(move_x == dot_x && move_y == dot_y){
+
+      for (WorldTypes type : collision_collect) {
+        if (object.getType() == type) {
           return true;
         }
       }
     }
+
     return false;
   }
 }

@@ -1,87 +1,60 @@
-class Life extends WorldObject{
+class Life extends WorldObject {
   NormalImage[] images;
-  
-  String iP;
-  
   boolean alive = true;
-  
   int animation_frame = 0;
-  
   boolean in_animation = false;
-  
-  float animation_timer = 0;
-  
-  Life(int grid_x, int grid_y){
+  int animation_timer = 0;
+
+  Life(int grid_x, int grid_y) {
     super(WorldTypes.LIFE, grid_x, grid_y);
-    
+
     images = new NormalImage[7];
-    
-    int j = 6;
-    
-    for(int i = 0; i < images.length; i++){
-      iP = "data/images/Visuals/heart_" + j;
-      images[i] = new NormalImage(iP);
-      j--;
+    for (int i = 0; i < images.length; i++) {
+      images[i] = new NormalImage("data/images/Visuals/heart_" + (6 - i));
     }
-    
+
     setImageContainer(images[0]);
   }
-  
-  void damage(){
-    
-    if(in_animation || !alive){
+
+  void damage() {
+    if (in_animation || !alive) {
       return;
     }
+
     in_animation = true;
     animation_frame = 0;
     animation_timer = 0;
-    
-    lifes--;
+    lifes = max(0, lifes - 1);
   }
-  
-  void updateAnimation(){
-    if(!in_animation){
+
+  void updateAnimation() {
+    if (!in_animation) {
       return;
     }
-    
+
     animation_timer++;
-    
-    if(animation_timer >= 8){
-      animation_timer = 0;
-      
-      if(animation_frame < images.length - 1){
-        animation_frame++;
-        setImageContainer(images[animation_frame]);
-      }
-      else{
-        in_animation = false;
-        alive = false;
-      }
+    if (animation_timer < 8) {
+      return;
+    }
+
+    animation_timer = 0;
+
+    if (animation_frame < images.length - 1) {
+      animation_frame++;
+      setImageContainer(images[animation_frame]);
+    } else {
+      in_animation = false;
+      alive = false;
     }
   }
-  
-  void lost(){
-    if(!alive && !in_animation){
-      for(int i = 0; i < world_objects.size(); i++){
-        
-        WorldObject object = world_objects.get(i);
-        
-        if(object instanceof Life){
-          Life l = (Life) object;
-          
-          int[] position = l.getPosition();
-          
-          if(position[0] == getGridX() && position[1] == getGridY()){
-            world_objects.remove(i);
-          }
-        }
-      }
-    }
+
+  boolean getState() {
+    return alive;
   }
-  
-  boolean getState(){return alive;}
-  
-  void display(){
-      drawObject();
+
+  void displayAt(float x, float y) {
+    if (image_container != null) {
+      image_container.drawImage(x, y);
+    }
   }
 }

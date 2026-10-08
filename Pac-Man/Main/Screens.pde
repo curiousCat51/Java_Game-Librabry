@@ -1,24 +1,22 @@
-class Screens{
-  
-  int size_pauseB = 5;
-  
-  Screens(){
-    
+class Screens {
+  void GAME_OVER() {
+    drawCenteredMessage("GAME OVER");
   }
-  
-  // Game Over screen
-  void GAME_OVER(){
-    background(200);
-    fill(255, 50, 90);
-    textSize(32);
-    textAlign(CENTER);
-    text("Game Over", width / 2, height / 2);
-    textSize(16);
-    text("High Score: " + score, width / 2, height / 2 + 38);
+
+  void VICTORY() {
+    drawCenteredMessage("VICTORY!");
   }
-  
-  // Pause screen
-  void PAUSE(){
-    
+
+  void PAUSE() {
+    drawCenteredMessage("PAUSE");
+  }
+
+  void drawCenteredMessage(String title) {
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    text(title, width * 0.5f, height * 0.5f - 30);
+    textSize(24);
+    text("Score: " + score, width * 0.5f, height * 0.5f + 30);
   }
 }

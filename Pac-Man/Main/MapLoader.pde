@@ -1,64 +1,185 @@
-class MapLoader{
-  int map_height;
-  
-  int id = 1;
-  
-  MapLoader(ArrayList<WorldObject> world_objects){
-    String[] lines = loadStrings("data/map/map1.txt");
-    // Größe der geladenen Map automatisch bestimmen
-    map_width = lines[0].length();
+class MapLoader {
+  int teleporterId = 1;
+
+  ArrayList<WorldObject> targetObjects;
+
+  MapLoader(ArrayList<WorldObject> worldObjects) {
+    targetObjects = worldObjects;
+  }
+
+  void loadMap(String mapPath) {
+    String[] lines = loadStrings(mapPath);
+
+    if (lines == null || lines.length == 0) {
+      throw new RuntimeException("Map konnte nicht geladen werden: " + mapPath);
+    }
+
+    validateMap(lines, mapPath);
+
     map_height = lines.length;
-  
-    updateLayout();
-   
-   
-   for(int i = 0; i < lines.length; i++){
-     char[] characters = lines[i].toCharArray();
-     
-     for(int j = 0; j < characters.length; j++){
-       char character = characters[j];
-       
-       switch(character){
-         case 'x': out_of_map.add(new GridPosition(j, i)); break; // Position außerhalb der Karte
-         
-         case 'T': world_objects.add(new Teleporter(j, i, id)); free_tiles.add(new GridPosition(j, i)); id++; break;
-         case 'o': world_objects.add(new Dot(j, i, 1)); free_tiles.add(new GridPosition(j,i)); break; // Punkt Groß
-         case '.': world_objects.add(new Dot(j, i, 2)); free_tiles.add(new GridPosition(j,i)); break; // Punkt Klein
-         
-         case 'c': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 1)); free_tiles.add(new GridPosition(j,i)); break; // Geist Cyan
-         case 'g': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 2)); free_tiles.add(new GridPosition(j,i)); break; // Geist Orange
-         case 'p': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 3)); free_tiles.add(new GridPosition(j,i)); break; // Geist Pink
-         case 'r': world_objects.add(new Enemy(j, i, ENEMY_SPEED, 4)); free_tiles.add(new GridPosition(j,i)); break; // Geist Red
-         
-         case 'P': world_objects.add(new Player(j, i, PLAYER_SPEED)); free_tiles.add(new GridPosition(j,i)); break; // Spieler
-         
-         case '_': world_objects.add(new Wall(j, i, 6, 0)); break; // Wand Tür
-         
-         case '-': world_objects.add(new Wall(j, i, 5, 1)); break; // Wand Grade 1
-         case '|': world_objects.add(new Wall(j, i, 5, 2)); break; // Wand Grade 2
-         
-         case '>': world_objects.add(new Wall(j, i, 4, 1)); break; // Wand Ende 1
-         case 'v': world_objects.add(new Wall(j, i, 4, 2)); break; // Wand Ende 2
-         case '<': world_objects.add(new Wall(j, i, 4, 3)); break; // Wand Ende 3
-         case '^': world_objects.add(new Wall(j, i, 4, 4)); break; // Wand Ende 4
-         
-         case '1': world_objects.add(new Wall(j, i, 1, 1)); break; // Wand Connection 1
-         case '2': world_objects.add(new Wall(j, i, 1, 2)); break; // Wand Connection 2
-         case '3': world_objects.add(new Wall(j, i, 1, 3)); break; // Wand Connection 3
-         case '4': world_objects.add(new Wall(j, i, 1, 4)); break; // Wand Connection 4
-         
-         case '5': world_objects.add(new Wall(j, i, 2, 1)); break; // Wand Ecke 1
-         case '6': world_objects.add(new Wall(j, i, 2, 2)); break; // Wand Ecke 2
-         case '7': world_objects.add(new Wall(j, i, 2, 3)); break; // Wand Ecke 3
-         case '8': world_objects.add(new Wall(j, i, 2, 4)); break; // Wand Ecke 4
-         
-         default:{
-           if((j == 10 && (i > 4 || i < 23)) || (j == 11 && (i > 4 || i < 23)) || (j == 15 && (i > 4 || i < 23)) || (j == 16 && (i > 4 || i < 23))){
-             free_tiles.add(new GridPosition(j,i)); // Freies Tile
-           }
-         }
-       }
-     }
-   }
+    map_width = lines[0].length();
+
+    blocked_tiles = new boolean[map_height][map_width];
+
+    for (int y = 0; y < map_height; y++) {
+      parseRow(lines[y], y);
+    }
+
+    if (player == null) {
+      throw new RuntimeException("Map enthält keinen Spieler (P). ");
+    }
+
+    if (total_dot_count == 0) {
+      throw new RuntimeException("Map enthält keine Dots.");
+    }
+  }
+
+  void validateMap(String[] lines, String mapPath) {
+    int expectedWidth = lines[0].length();
+    if (expectedWidth == 0) {
+      throw new RuntimeException("Map enthält eine leere erste Zeile: " + mapPath);
+    }
+
+    for (int y = 0; y < lines.length; y++) {
+      if (lines[y].length() != expectedWidth) {
+        throw new RuntimeException(
+          "Map-Zeile " + (y + 1) + " hat " + lines[y].length() +
+          " Zeichen, erwartet werden " + expectedWidth + "."
+        );
+      }
+    }
+  }
+
+  void parseRow(String line, int y) {
+    for (int x = 0; x < line.length(); x++) {
+      parseTile(line.charAt(x), x, y);
+    }
+  }
+
+  void parseTile(char character, int x, int y) {
+    switch (character) {
+      case 'x':
+        out_of_map.add(new GridPosition(x, y));
+        blocked_tiles[y][x] = true;
+        return;
+
+      case 'T':
+        targetObjects.add(new Teleporter(x, y, teleporterId++));
+        free_tiles.add(new GridPosition(x, y));
+        return;
+
+      case 'o':
+        targetObjects.add(new Dot(x, y, 1));
+        free_tiles.add(new GridPosition(x, y));
+        total_dot_count++;
+        return;
+
+      case '.':
+        targetObjects.add(new Dot(x, y, 2));
+        free_tiles.add(new GridPosition(x, y));
+        total_dot_count++;
+        return;
+
+      case 'F':
+        fruit_pos_x = x;
+        fruit_pos_y = y;
+        free_tiles.add(new GridPosition(x, y));
+        return;
+
+      case 'c':
+        addEnemy(x, y, 1);
+        return;
+
+      case 'g':
+        addEnemy(x, y, 2);
+        return;
+
+      case 'p':
+        addEnemy(x, y, 3);
+        return;
+
+      case 'r':
+        addEnemy(x, y, 4);
+        return;
+
+      case 'P':
+        if (player != null) {
+          throw new RuntimeException("Map enthält mehr als einen Spieler.");
+        }
+        player = new Player(x, y, PLAYER_SPEED);
+        targetObjects.add(player);
+        free_tiles.add(new GridPosition(x, y));
+        return;
+
+      case '_':
+        addWall(x, y, 6, 0);
+        return;
+
+      case '+':
+        addWall(x, y, 3, 0);
+        return;
+
+      case '-':
+        addWall(x, y, 5, 1);
+        return;
+
+      case '|':
+        addWall(x, y, 5, 2);
+        return;
+
+      case '>':
+        addWall(x, y, 4, 1);
+        return;
+
+      case 'v':
+        addWall(x, y, 4, 2);
+        return;
+
+      case '<':
+        addWall(x, y, 4, 3);
+        return;
+
+      case '^':
+        addWall(x, y, 4, 4);
+        return;
+
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+        addWall(x, y, 1, character - '0');
+        return;
+
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+        addWall(x, y, 2, character - '4');
+        return;
+
+      case ' ':
+        // Leerzeichen sind begehbare Map-Fläche.
+        free_tiles.add(new GridPosition(x, y));
+        return;
+
+      default:
+        // Unbekannte Zeichen werden bewusst als Fehler behandelt, damit
+        // Tippfehler in Maps nicht unbemerkt die Spiellogik verändern.
+        throw new RuntimeException(
+          "Unbekanntes Map-Zeichen '" + character + "' bei (" + x + ", " + y + ")."
+        );
+    }
+  }
+
+  void addEnemy(int x, int y, int type) {
+    Enemy enemy = new Enemy(x, y, ENEMY_SPEED, type);
+    enemies.add(enemy);
+    targetObjects.add(enemy);
+    free_tiles.add(new GridPosition(x, y));
+  }
+
+  void addWall(int x, int y, int wallType, int version) {
+    targetObjects.add(new Wall(x, y, wallType, version));
+    blocked_tiles[y][x] = wallType != 6;
   }
 }

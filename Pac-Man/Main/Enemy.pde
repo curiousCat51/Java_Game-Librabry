@@ -1,563 +1,498 @@
-class Enemy extends Creature{
-  ArrayList<GridPosition> visited = new ArrayList<GridPosition>();
-  ArrayList<GridPosition> toVisit = new ArrayList<GridPosition>();
+class Enemy extends Creature {
+  int GHOST_INKY = 1;
+  int GHOST_CLYDE = 2;
+  int GHOST_PINKY = 3;
+  int GHOST_BLINKY = 4;
+
+  int CLYDE_BLOCK = 0;
+  int CLYDE_DETOUR = 1;
+  int CLYDE_RETURN = 2;
+
   AnimationImage image_right;
   AnimationImage image_left;
   AnimationImage image_up;
   AnimationImage image_down;
   AnimationImage image_vul;
-  NormalImage image_cought_right;
-  NormalImage image_cought_left;
-  NormalImage image_cought_up;
-  NormalImage image_cought_down;
-  CreatureDirections way;
-  CreatureDirections previous_direction;
-  
-  // Gegner KI:
-  // - Prüfen möglicher Richtungen
-  // - Richtung wählen
-  // - Richtung folgen bis zu einem Hindernis
-  // - Neue Richtung wählen
-  
-  String path = "data/images/Ghosts/ghost_";
-  String iP = path;
+
+  NormalImage image_caught_right;
+  NormalImage image_caught_left;
+  NormalImage image_caught_up;
+  NormalImage image_caught_down;
+
   int gType;
-  String pattern;
   int spawn_x;
   int spawn_y;
-  boolean cought = false;
-  boolean active = true;
-  
-  // Clyde KI
-  final int CLYDE_BLOCK = 0;
-  final int CLYDE_DETOUR = 1;
-  final int CLYDE_RETURN = 2;
-  
-  int clyde_state = CLYDE_BLOCK;
-  GridPosition clyde_target = null;
-  CreatureDirections clyde_detour_direction = CreatureDirections.NEUTRAL;
 
-  Enemy(int grid_x, int grid_y, float speed, int gType){
+  boolean caught = false;
+  boolean active = true;
+  boolean frightened = false;
+
+  int clyde_state = CLYDE_BLOCK;
+  GridPosition clyde_target;
+  CreatureDirections clyde_detour_direction = CreatureDirections.NEUTRAL;
+  int clyde_detour_steps = 0;
+  boolean clyde_detour_moving = false;
+
+  Enemy(int grid_x, int grid_y, float speed, int gType) {
     super(WorldTypes.ENEMY, grid_x, grid_y, speed);
-    
+
+    this.gType = gType;
     spawn_x = grid_x;
     spawn_y = grid_y;
-    
-    previous_direction = direction;
-    
-    switch(gType){
-      case 1: iP = iP + "cyan_walk_"; break; // Inky bewegt sich abhängig von Pac-Man and Blinkys Position
-      case 2: iP = iP + "orange_walk_"; break; // Clyde wechselt zwischen Pac-Man folgen und Weg blockieren
-      case 3: iP = iP + "pink_walk_"; break; // Pinky schneidet Wege ab (Pac-Man's aktuelle Position + 4 Felder in Pac-Man's bewegungs Richtung)
-      case 4: iP = iP + "red_walk_"; break; // Blinky jagt direkt (Pac-Man's aktuelle Position)
+    direction = CreatureDirections.LINKS;
+
+    // "color" ist in Processing ein reservierter Datentyp.
+    // Daher verwenden wir für den Dateinamen bewusst einen anderen Namen.
+    String ghostColorName;
+    // Processing verlangt für switch/case konstante Fallwerte.
+    // Deshalb werden hier feste Zahlenwerte verwendet.
+    if (gType == 1) {
+      ghostColorName = "cyan";
+    } else if (gType == 2) {
+      ghostColorName = "orange";
+    } else if (gType == 3) {
+      ghostColorName = "pink";
+    } else {
+      ghostColorName = "red";
     }
-    
-    
-    image_right = new AnimationImage(iP + "right_", 2, ANIMATION_SPEED);
-    image_left = new AnimationImage(iP + "left_", 2, ANIMATION_SPEED);
-    image_up = new AnimationImage(iP + "up_", 2, ANIMATION_SPEED);
-    image_down = new AnimationImage(iP + "down_", 2, ANIMATION_SPEED);
-    image_vul = new AnimationImage(path + "vul_", 4, ANIMATION_SPEED);
-    image_cought_right = new NormalImage(path + "cought_walk_right");
-    image_cought_left = new NormalImage(path + "cought_walk_left");
-    image_cought_up = new NormalImage(path + "cought_walk_up");
-    image_cought_down = new NormalImage(path + "cought_walk_down");
-    
+
+    String prefix = "data/images/Ghosts/ghost_" + ghostColorName + "_walk_";
+    image_right = new AnimationImage(prefix + "right_", 2, ANIMATION_SPEED);
+    image_left = new AnimationImage(prefix + "left_", 2, ANIMATION_SPEED);
+    image_up = new AnimationImage(prefix + "up_", 2, ANIMATION_SPEED);
+    image_down = new AnimationImage(prefix + "down_", 2, ANIMATION_SPEED);
+
+    image_vul = new AnimationImage(
+      "data/images/Ghosts/ghost_vul_", 4, ANIMATION_SPEED
+    );
+
+    image_caught_right = new NormalImage("data/images/Ghosts/ghost_cought_walk_right");
+    image_caught_left = new NormalImage("data/images/Ghosts/ghost_cought_walk_left");
+    image_caught_up = new NormalImage("data/images/Ghosts/ghost_cought_walk_up");
+    image_caught_down = new NormalImage("data/images/Ghosts/ghost_cought_walk_down");
+
     setImageContainer(image_left);
-    
-    this.gType = gType;
   }
-  
-  // Method zur Bewegung
-  void move(){
-    
-    // Continue an existing movement
-      updateMovement();
-  
-      // Don't choose another tile until we reached the current target
-      if(isMoving()){
-          return;
+
+  void move() {
+    updateMovement();
+
+    if (isMoving()) {
+      return;
+    }
+
+    updateStateAfterArrival();
+
+    if (caught) {
+      direction = chooseDirectionTo(spawn_x, spawn_y);
+      startMoveIfPossible(direction);
+      return;
+    }
+
+    if (!active) {
+      return;
+    }
+
+    if (powerMode && frightened) {
+      chooseFrightenedDirection();
+    } else {
+      chooseNormalDirection();
+    }
+
+    if (!canMove(direction)) {
+      direction = getFreeDirection();
+    }
+
+    startMoveIfPossible(direction);
+  }
+
+  void updateStateAfterArrival() {
+    if (caught && isAtSpawn()) {
+      caught = false;
+      active = true;
+      frightened = false;
+      clyde_state = CLYDE_BLOCK;
+      clyde_target = null;
+      clyde_detour_moving = false;
+      clyde_detour_steps = 0;
+      return;
+    }
+
+    if (gType != GHOST_CLYDE) {
+      return;
+    }
+
+    if (clyde_state == CLYDE_BLOCK && hasReachedClydeTarget()) {
+      clyde_state = CLYDE_DETOUR;
+      clyde_detour_steps = 4;
+      clyde_detour_moving = false;
+    } else if (clyde_state == CLYDE_DETOUR &&
+               clyde_detour_moving) {
+      clyde_detour_moving = false;
+      clyde_detour_steps--;
+
+      if (clyde_detour_steps <= 0) {
+        clyde_state = CLYDE_RETURN;
       }
-      
-      int position[] = getPosition();
-      
-      println("POWER MODE: " + powerMode);
-      
-      if(powerMode && active){
-        
-        if(isAtPlayer()){
-          cought = true;
-          println("COUGHT!");
-          active = false;
-          chooseDirection();
-        }
-        else{
-          direction = chooseFleeDirection();
-          println("Flee direction: " + direction);
-        }
+    } else if (clyde_state == CLYDE_RETURN && hasReachedClydeTarget()) {
+      clyde_state = CLYDE_BLOCK;
+      clyde_target = null;
+    }
+  }
+
+  void chooseNormalDirection() {
+    if (gType == GHOST_CLYDE) {
+      if (clyde_state == CLYDE_DETOUR) {
+        direction = getRandomDirection(true);
+        clyde_detour_direction = direction;
+        clyde_detour_moving = true;
+        return;
       }
-      else{
-        
-        println("NORMAL MODE | Direction: " + direction + " | Previous: " + previous_direction);
-        
-        
-        
-        if(isDecisionTile(position[0], position[1])){
-            direction = chooseDirection();
-        }
-        else if(isDeadEnd(position[0], position[1]) || ((position[0] == border_left.getX() && position[1] == border_left.getY()) || (position[0] == border_right.getX() && position[1] == border_right.getY()))){
-            direction = chooseDirection();
-        }        
-      }
-      
-      if(!canMove(direction)){
-    
-        direction = getFreeDirection();
-    
-        println("Final direction: " + direction);
-        
-        if(previous_direction != direction){
-          previous_direction = direction;
-        }
-      }
-      
-      if(isAtSpawn()){
-        active = true;
-        cought = false;
-      }
-      
-      switch(direction){
-  
-        case RECHTS:{
-          if(cought){
-            move(direction, image_cought_right);
-            break;
-          }
-          else if(powerMode){
-            move(direction, image_vul);
-            break;
-          }
-          else{
-            move(direction, image_right);
-            break;
-          }
-        }
-  
-        case LINKS:{
-          if(cought){
-            move(direction, image_cought_left);
-            break;
-          }
-          else if(powerMode){
-            move(direction, image_vul);
-            break;
-          }
-          else{
-            move(direction, image_left);
-            break;
-          }
-        }
-  
-        case HOCH:{
-          if(cought){
-            move(direction, image_cought_up);
-            break;
-          }
-          else if(powerMode){
-            move(direction, image_vul);
-            break;
-          }
-          else{
-            move(direction, image_up);
-            break;
-          }
-        }
-  
-        case RUNTER:{
-          if(cought){
-            move(direction, image_cought_down);
-            break;
-          }
-          else if(powerMode){
-            move(direction, image_vul);
-            break;
-          }
-          else{
-            move(direction, image_down);
-            break;
-          }
-        }
-  
-        case NEUTRAL:{
-          if(cought){
-            move(direction, image_cought_left);
-            break;
-          }
-          else if(powerMode){
-            move(direction, image_vul);
-            break;
-          }
-          else{
-            move(direction, image_left);
-            break;
-          }
-        }
+
+      if (clyde_state == CLYDE_RETURN && clyde_target != null) {
+        direction = chooseDirectionTo(clyde_target.x, clyde_target.y);
+        return;
       }
     }
-  
-  // Methode zur Wahl einer neuen Richtung
-  CreatureDirections chooseDirection(int targetX, int targetY){
-    int[] position = getPosition();
-    GridPosition target = visitLoop(targetX, targetY);
-  
-    if(target == null){
+
+    if (isDecisionTile(grid_x, grid_y) || isDeadEnd(grid_x, grid_y)) {
+      direction = chooseDirection();
+    }
+  }
+
+  void chooseFrightenedDirection() {
+    CreatureDirections reverse = oppositeDirection(direction);
+
+    if (isDecisionTile(grid_x, grid_y) || isDeadEnd(grid_x, grid_y)) {
+      direction = getRandomDirectionWithoutReverse(reverse);
+    }
+  }
+
+  void startMoveIfPossible(CreatureDirections chosen) {
+    if (chosen == CreatureDirections.NEUTRAL || !canMove(chosen)) {
+      return;
+    }
+
+    move(chosen, getImageForDirection(chosen));
+  }
+
+  ImageContainer getImageForDirection(CreatureDirections chosen) {
+    if (caught) {
+      if (chosen == CreatureDirections.RECHTS) return image_caught_right;
+      if (chosen == CreatureDirections.LINKS) return image_caught_left;
+      if (chosen == CreatureDirections.HOCH) return image_caught_up;
+      return image_caught_down;
+    }
+
+    if (powerMode && frightened) {
+      return image_vul;
+    }
+
+    if (chosen == CreatureDirections.RECHTS) return image_right;
+    if (chosen == CreatureDirections.LINKS) return image_left;
+    if (chosen == CreatureDirections.HOCH) return image_up;
+    return image_down;
+  }
+
+  // ------------------------------------------------------------
+  // Zielwahl
+  // ------------------------------------------------------------
+
+  CreatureDirections chooseDirection() {
+    int[] target = getCurrentTarget();
+    return chooseDirectionTo(target[0], target[1]);
+  }
+
+  CreatureDirections chooseDirectionTo(int targetX, int targetY) {
+    targetX = constrain(targetX, 0, map_width - 1);
+    targetY = constrain(targetY, 0, map_height - 1);
+
+    GridPosition nextStep = findNextPathStep(grid_x, grid_y, targetX, targetY);
+    if (nextStep == null) {
       return direction;
     }
-    
-    
-    GridPosition current = target;
-    
-    while(current.previous != null){
 
-        if(current.previous.x == position[0] &&
-           current.previous.y == position[1]){
-            break;
-        }
-        
-        println("Path node: " + current.x + "," + current.y);
-    
-        current = current.previous;
-    }
-  
-    if(current.x > position[0]){
-      return CreatureDirections.RECHTS;
-    }
-  
-    if(current.x < position[0]){
-      return CreatureDirections.LINKS;
-    }
-  
-    if(current.y > position[1]){
-      return CreatureDirections.RUNTER;
-    }
-  
-    if(current.y < position[1]){
-      return CreatureDirections.HOCH;
-    }
-    if(position[0] == current.x && position[1] == current.y){
-      return CreatureDirections.NEUTRAL;
-    }
-  
-    return this.direction;
-  }
-  
-  // Methode zur Wahl einer Fluchtrichtung (im Power Modus)
-  CreatureDirections chooseFleeDirection(){
-    CreatureDirections direction = chooseDirection();
-    
-    return oppositeDirection(direction);
-  }
-  
-  // Methode zur Berechnung der möglichen nächsten Position
-  int[] calculatePotentialPosition(int x, int y, CreatureDirections direction) {  
-    int nextXY[] = moveDic(direction);
-    
-    int nextX = x + nextXY[0];
-    int nextY = y + nextXY[1];
-  
-    return new int[]{nextX, nextY};
+    if (nextStep.x > grid_x) return CreatureDirections.RECHTS;
+    if (nextStep.x < grid_x) return CreatureDirections.LINKS;
+    if (nextStep.y > grid_y) return CreatureDirections.RUNTER;
+    if (nextStep.y < grid_y) return CreatureDirections.HOCH;
+
+    return direction;
   }
 
-  // Methode zur ermittlung der invertierten Richtung
-  CreatureDirections oppositeDirection(CreatureDirections dir) {
-  
-    if (dir == CreatureDirections.RECHTS)
-      return CreatureDirections.LINKS;
-  
-    if (dir == CreatureDirections.LINKS)
-      return CreatureDirections.RECHTS;
-  
-    if (dir == CreatureDirections.HOCH)
-      return CreatureDirections.RUNTER;
-  
-    return CreatureDirections.HOCH;
-  }
-  
-  
-  // Ist bereits eine Wand an einem bestimmten Tile?
-  boolean isWallAtGrid(int gridX, int gridY){
+  int[] getCurrentTarget() {
+    if (player == null) {
+      return new int[] {spawn_x, spawn_y};
+    }
 
-    for(WorldObject object : world_objects){
-  
-      if(object instanceof Wall){
-        
-        Wall wall = (Wall) object;
-        
-        int position[] = wall.getPosition();
-  
-        if(position[0] == gridX && position[1] == gridY && !wall.isPassThrough()){
-          return true;
-        }
-      }
+    if (caught) {
+      return new int[] {spawn_x, spawn_y};
     }
-  
-    return false;
+
+    int playerX = player.getGridX();
+    int playerY = player.getGridY();
+
+    if (gType == 1) {
+      Enemy blinky = getBlinky();
+      if (blinky == null) return new int[] {playerX, playerY};
+      return calcVector(
+        blinky.getGridX(), blinky.getGridY(), playerX, playerY
+      );
+    }
+
+    if (gType == 2) {
+      if (clyde_state == CLYDE_RETURN && clyde_target != null) {
+        return new int[] {clyde_target.x, clyde_target.y};
+      }
+
+      if (calculateDistance(playerX, playerY) > 4) {
+        clyde_target = null;
+        return new int[] {playerX, playerY};
+      }
+
+      if (clyde_target == null) {
+        clyde_target = chooseClydeTarget(player);
+      }
+
+      return new int[] {clyde_target.x, clyde_target.y};
+    }
+
+    if (gType == 3) {
+      int[] playerMove = moveDic(player.getDirection());
+      return new int[] {
+        constrain(playerX + 4 * playerMove[0], 0, map_width - 1),
+        constrain(playerY + 4 * playerMove[1], 0, map_height - 1)
+      };
+    }
+
+    return new int[] {playerX, playerY};
   }
-  
-  // Ist das Tile eine Kreuzung/Kurve?
-  boolean isDecisionTile(int gridX, int gridY) {
-    
-    int tilesWithoutWalls = 0;
-    
-    ArrayList<CreatureDirections> directions;
-    directions = new ArrayList<CreatureDirections>();
-    
-    for(CreatureDirections direction : CreatureDirections.values()){
-      if(direction == CreatureDirections.NEUTRAL){
-        continue;
+
+  Enemy getBlinky() {
+    for (Enemy enemy : enemies) {
+      if (enemy.gType == GHOST_BLINKY) {
+        return enemy;
       }
-      int[] pos = moveDic(direction);
-      if(!isWallAtGrid(gridX + pos[0], gridY + pos[1])){
-        tilesWithoutWalls++;
-        directions.add(direction);
-      }
-    }
-    if(tilesWithoutWalls == 2){
-      if(directions.get(0) == oppositeDirection(directions.get(1))){
-        return false;
-      }
-      return true;
-    }
-    return tilesWithoutWalls >= 3;
-  }
-  
-  // Ist das gewählte Tile eine Sackgasse?
-  boolean isDeadEnd(int gridX, int gridY){
-    
-    int tilesWithoutWalls = 0;
-    
-    ArrayList<CreatureDirections> directions;
-    directions = new ArrayList<CreatureDirections>();
-    
-    for(CreatureDirections direction : CreatureDirections.values()){
-      if(direction == CreatureDirections.NEUTRAL){
-        continue;
-      }
-      int[] pos = moveDic(direction);
-      if(!isWallAtGrid(gridX + pos[0], gridY + pos[1])){
-        tilesWithoutWalls++;
-        directions.add(direction);
-      }
-    }
-    if(tilesWithoutWalls == 1){
-      way = directions.get(0);
-      return true;
-    }
-    else{
-      return false;
-    }
-      
-  }
-  
-  // Methode um mögliche nächste Feld des Pfades zu ermitteln
-  void isToVisit(GridPosition current, CreatureDirections dir){
-    int[] pos = moveDic(dir);
-    
-    int nextX = current.x + pos[0];
-    int nextY = current.y + pos[1];
-    
-    GridPosition first = out_of_map.get(0);
-    GridPosition last = out_of_map.get(out_of_map.size() - 1);
-    
-    if(nextX < first.getX() || nextX > last.getX() || nextY < first.getY() || nextY > last.getY()){
-     return; 
-    }
-    
-    GridPosition next = new GridPosition(nextX, nextY);
-    next.previous = current;
-    
-    if(!isWallAtGrid(nextX, nextY) && !isVisited(next) && !isInToVisit(next)){
-      toVisit.add(next);
-    }
-  }
-  
-  boolean isInToVisit(GridPosition position){
-    for(int i = 0; i < toVisit.size(); i++){
-      GridPosition toVisitPosition = toVisit.get(i);
-      
-      if(toVisitPosition.isSamePosition(position)){
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  // Methode zum abgleich der besuchten und zubesuchenden Felder
-  GridPosition visit(int targetX, int targetY){      
-    
-    GridPosition current = toVisit.get(0);
-    
-    visited.add(current);
-    toVisit.remove(0);
-    
-    if(current.x == targetX && current.y == targetY){
-      return current;
-    }
-    
-    for(CreatureDirections dir : CreatureDirections.values()){
-      if(dir == CreatureDirections.NEUTRAL){
-        continue;
-      }
-      isToVisit(current, dir);
     }
     return null;
   }
-  
-  // Schleifen-Methode für die Wegfindung
-  GridPosition visitLoop(int targetX, int targetY){
 
-  toVisit.clear();
-  visited.clear();
+  int[] calcVector(int blinkyX, int blinkyY, int playerX, int playerY) {
+    return new int[] {
+      constrain(playerX + 2 * (playerX - blinkyX), 0, map_width - 1),
+      constrain(playerY + 2 * (playerY - blinkyY), 0, map_height - 1)
+    };
+  }
 
-  int[] position = getPosition();
+  GridPosition chooseClydeTarget(Player targetPlayer) {
+    int[] move = moveDic(targetPlayer.getDirection());
+    int targetX = constrain(targetPlayer.getGridX() + 4 * move[0], 0, map_width - 1);
+    int targetY = constrain(targetPlayer.getGridY() + 4 * move[1], 0, map_height - 1);
+    return new GridPosition(targetX, targetY);
+  }
 
-  GridPosition start = new GridPosition(position[0], position[1]);
-  toVisit.add(start);
+  boolean hasReachedClydeTarget() {
+    return clyde_target != null &&
+           grid_x == clyde_target.x && grid_y == clyde_target.y;
+  }
 
-  while(!toVisit.isEmpty()){
-    GridPosition found = visit(targetX, targetY);
+  // ------------------------------------------------------------
+  // Frightened / caught
+  // ------------------------------------------------------------
 
-    if(found != null){
-      return found;
+  void startFrightened() {
+    if (frightened || caught || !active) {
+      return;
     }
-  }
 
-  return null;
-}
-  
-  // Methode zur Berechnung einer Vektor Position abhängig von zwei Punkten
-  int[] calcVector(int blinky_x, int blinky_y, int player_x, int player_y){
-    int x = player_x + 2 * (player_x - blinky_x);
-    int y = player_y + 2 * (player_y - blinky_y);
-    
-    return new int[]{x, y};
-  }
-  
-  int getGType(){return this.gType;}
-  
-  // Methode zur Überprüfung, ob ein Feld bereits besucht wurde
-  boolean isVisited(GridPosition position){
-    for(int i = 0; i < visited.size(); i++){
-      GridPosition visite = visited.get(i);
-      if(visite.isSamePosition(position)){
-        return true;
-      }
-    }  
-    return false;
-  }
-  
-  // Methode zur überprüfung, ob ein Geist an seinen Spawn zurückgekehrt ist
-  boolean isAtSpawn(){
-    int[] position = getPosition();
-    
-    if(position[0] == spawn_x && position[1] == spawn_y){
-      return true;
-    }
-    
-    return false;
-  }
-  
-  // Methode zur Berechnung der Entfernung nach der Manhatten-Metrik
-  int calculateDistance(int targetX, int targetY){
-    int[] position = getPosition();
-    return abs(targetX - position[0]) + abs(targetY - position[1]);
-  }
-  
-  // Methode zur Generierung einer Zufallszahl 
-  int generateNumber(){
-    return (int) random(0, 5 + 1);
-  }
-  
-  // Methode zur ermittlung der invertierten Richtung
-  CreatureDirections getReverseDirection(){
+    frightened = true;
     CreatureDirections reverse = oppositeDirection(direction);
-  
-    if(canMove(reverse)){
+
+    if (canMove(reverse)) {
+      direction = reverse;
+    }
+  }
+
+  void endFrightened() {
+    frightened = false;
+
+    if (gType == GHOST_CLYDE) {
+      clyde_state = CLYDE_BLOCK;
+      clyde_target = null;
+      clyde_detour_moving = false;
+      clyde_detour_steps = 0;
+    }
+  }
+
+  void getCaught() {
+    if (!frightened || caught) {
+      return;
+    }
+
+    caught = true;
+    frightened = false;
+    active = false;
+    direction = oppositeDirection(direction);
+  }
+
+  // ------------------------------------------------------------
+  // Wegfindung - BFS ohne ArrayList.remove(0)
+  // ------------------------------------------------------------
+
+  GridPosition findNextPathStep(int startX, int startY, int targetX, int targetY) {
+    if (startX == targetX && startY == targetY) {
+      return null;
+    }
+
+    if (startX < 0 || startX >= map_width || startY < 0 || startY >= map_height ||
+        targetX < 0 || targetX >= map_width || targetY < 0 || targetY >= map_height) {
+      return null;
+    }
+
+    if (collision.isBlockedByMap(startX, startY) || collision.isBlockedByMap(targetX, targetY)) {
+      return null;
+    }
+
+    boolean[][] visited = new boolean[map_height][map_width];
+    GridPosition[][] previous = new GridPosition[map_height][map_width];
+    ArrayDeque<GridPosition> queue = new ArrayDeque<GridPosition>();
+
+    GridPosition start = new GridPosition(startX, startY);
+    visited[startY][startX] = true;
+    queue.addLast(start);
+
+    CreatureDirections[] directions = {
+      CreatureDirections.HOCH,
+      CreatureDirections.RUNTER,
+      CreatureDirections.LINKS,
+      CreatureDirections.RECHTS
+    };
+
+    GridPosition found = null;
+
+    while (!queue.isEmpty()) {
+      GridPosition current = queue.removeFirst();
+
+      if (current.x == targetX && current.y == targetY) {
+        found = current;
+        break;
+      }
+
+      for (CreatureDirections dir : directions) {
+        int nextX = current.x + directionDeltaX(dir);
+        int nextY = current.y + directionDeltaY(dir);
+
+        if (nextX < 0 || nextX >= map_width ||
+            nextY < 0 || nextY >= map_height) {
+          continue;
+        }
+
+        if (visited[nextY][nextX] || collision.isBlockedByMap(nextX, nextY)) {
+          continue;
+        }
+
+        visited[nextY][nextX] = true;
+        previous[nextY][nextX] = current;
+        queue.addLast(new GridPosition(nextX, nextY));
+      }
+    }
+
+    if (found == null) {
+      return null;
+    }
+
+    GridPosition current = found;
+    while (current != null) {
+      GridPosition parent = previous[current.y][current.x];
+      if (parent == null || (parent.x == startX && parent.y == startY)) {
+        return current;
+      }
+      current = parent;
+    }
+
+    return null;
+  }
+
+  // ------------------------------------------------------------
+  // Grid-Hilfen
+  // ------------------------------------------------------------
+
+  boolean isWallAtGrid(int gridX, int gridY) {
+    return collision.isBlockedByMap(gridX, gridY);
+  }
+
+  int countFreeNeighbors(int gridX, int gridY) {
+    int count = 0;
+    if (!isWallAtGrid(gridX + 1, gridY)) count++;
+    if (!isWallAtGrid(gridX - 1, gridY)) count++;
+    if (!isWallAtGrid(gridX, gridY + 1)) count++;
+    if (!isWallAtGrid(gridX, gridY - 1)) count++;
+    return count;
+  }
+
+  boolean isDecisionTile(int gridX, int gridY) {
+    int freeNeighbors = countFreeNeighbors(gridX, gridY);
+    if (freeNeighbors >= 3) return true;
+    if (freeNeighbors != 2) return false;
+
+    boolean horizontal = !isWallAtGrid(gridX - 1, gridY) &&
+                         !isWallAtGrid(gridX + 1, gridY);
+    boolean vertical = !isWallAtGrid(gridX, gridY - 1) &&
+                       !isWallAtGrid(gridX, gridY + 1);
+
+    return !(horizontal || vertical);
+  }
+
+  boolean isDeadEnd(int gridX, int gridY) {
+    return countFreeNeighbors(gridX, gridY) == 1;
+  }
+
+  CreatureDirections getRandomDirection(boolean allowReverse) {
+    return getRandomDirectionWithoutReverse(
+      allowReverse ? CreatureDirections.NEUTRAL : oppositeDirection(direction)
+    );
+  }
+
+  CreatureDirections getRandomDirectionWithoutReverse(CreatureDirections reverse) {
+    CreatureDirections[] candidates = new CreatureDirections[4];
+    int count = 0;
+
+    CreatureDirections[] directions = {
+      CreatureDirections.HOCH,
+      CreatureDirections.RUNTER,
+      CreatureDirections.LINKS,
+      CreatureDirections.RECHTS
+    };
+
+    for (CreatureDirections candidate : directions) {
+      if (candidate != reverse && canMove(candidate)) {
+        candidates[count++] = candidate;
+      }
+    }
+
+    if (count > 0) {
+      return candidates[int(random(count))];
+    }
+
+    if (reverse != CreatureDirections.NEUTRAL && canMove(reverse)) {
       return reverse;
     }
-  
+
     return getFreeDirection();
   }
-  
-  // Methode zur Wahl einer Richtung abhängig von einem Ziel-Tile
-  CreatureDirections chooseDirection(){
-    int[] target = getCurrentTarget();
-    return chooseDirection(target[0], target[1]);
+
+  CreatureDirections oppositeDirection(CreatureDirections dir) {
+    if (dir == CreatureDirections.RECHTS) return CreatureDirections.LINKS;
+    if (dir == CreatureDirections.LINKS) return CreatureDirections.RECHTS;
+    if (dir == CreatureDirections.HOCH) return CreatureDirections.RUNTER;
+    if (dir == CreatureDirections.RUNTER) return CreatureDirections.HOCH;
+    return CreatureDirections.NEUTRAL;
   }
-  
-  // Methode zur Rückgabe des aktuellen Ziel-Tiles
-  int[] getCurrentTarget(){
-    Player player = null;
-    Enemy blinky = null;
-  
-    for(WorldObject object : world_objects){
-      if(object instanceof Player){
-        player = (Player) object;
-      }
-  
-      if(object instanceof Enemy){
-        Enemy e = (Enemy) object;
-        if(e.getGType() == 4){
-          blinky = e;
-        }
-      }
-    }
-  
-    if(player == null){
-      return new int[]{spawn_x, spawn_y};
-    }
-  
-    if(cought){
-      return new int[]{spawn_x, spawn_y};
-    }
-    
-    int player_x = player.getGridX();
-    int player_y = player.getGridY();
-  
-    switch(gType){
-      case 1:{
-        // Inky
-        if(blinky == null){
-          return new int[]{player_x, player_y};
-        }
-  
-        int[] vector = calcVector(blinky.getGridX(), blinky.getGridY(), player_x, player_y);
-  
-        return vector;
-      }
-  
-      case 2:{
-        // Clyde
-        // - Wählt sein Ziel
-        // - Bewegt sich zum Ziel
-        // - Läuft in eine Richtung von dem Tile, bis zum nächsten DecisionTile und kehrt dann wieder um
-        // - Wählt ein neues Ziel
-        
-        if(calculateDistance(player_x, player_y) > 8){
-          return new int[]{player_x, player_y};
-        }
-      }
-  
-      case 3:{
-        // Pinky
-        int[] move = moveDic(player.getDirection());
-  
-        return new int[]{player_x + 4 * move[0], player_y + 4 * move[1]};
-      }
-      default:{
-        // Blinky
-        return new int[]{player_x, player_y};
-      }
-    }
+
+  int calculateDistance(int targetX, int targetY) {
+    return abs(targetX - grid_x) + abs(targetY - grid_y);
   }
+
+  int getGType() { return gType; }
+  boolean isAtSpawn() { return grid_x == spawn_x && grid_y == spawn_y; }
 }

@@ -1,50 +1,31 @@
-class Dot extends WorldObject{
+class Dot extends WorldObject {
   NormalImage image;
-  
-  String iP = "data/images/Items/dot_";
   int dot_type;
-  
-  Dot(int grid_x, int grid_y, int dot_type){
-    super(WorldTypes.DOT, grid_x, grid_y);
+  int dot_score;
 
+  Dot(int grid_x, int grid_y, int dot_type) {
+    super(WorldTypes.DOT, grid_x, grid_y);
     this.dot_type = dot_type;
-    
-    switch(dot_type){
-      
-      case 1: iP = iP + "big"; break;
-      case 2: iP = iP + "small"; break;
+
+    if (dot_type == 1) {
+      image = new NormalImage("data/images/Items/dot_big");
+      dot_score = 50;
+    } else {
+      image = new NormalImage("data/images/Items/dot_small");
+      dot_score = 10;
     }
 
-    image = new NormalImage(iP);
     setImageContainer(image);
   }
-  
-  // Dot sammeln
-  void collect(int x, int y){
-  
 
-    for(int i = world_objects.size() - 1; i >= 0; i--){
+  void collect() {
+    score += dot_score;
+    dot_count++;
 
-        WorldObject object = world_objects.get(i);
-
-        if(object instanceof Dot){
-
-            Dot dot = (Dot)object;
-
-            if(x == dot.getGridX() && y == dot.getGridY()){
-
-              switch(dot_type){
-                case 1: score += 50; powerMode = true; powerTimer = 600; break; // Großer Dot
-                case 2: score += 10; break; // Kleiner Dot
-              }
-              dot_count++;
-              world_objects.remove(i);
-            }
-        }
+    if (dot_type == 1) {
+      startPowerMode();
     }
-  }
-  
-  void display(){
-    drawObject();
+
+    world_objects.remove(this);
   }
 }

@@ -1,126 +1,118 @@
-class Teleporter extends WorldObject{
+class Teleporter extends WorldObject {
   NormalImage image_active;
   NormalImage image_inactive;
-  Teleporter t = null;
-  
-  boolean isActive = true;
-  boolean isTeleporting = false;
-  
-  String iP = "/data/images/Teleporter/teleporter_";
-  
-  
+
+  boolean active = true;
   int id;
-  int connect_id = 0;
-  String timer_name = "Teleporter " + id + " and "; 
-  
-  Teleporter(int grid_x, int grid_y, int tp_id){
+  Teleporter connection;
+
+  String basePath = "data/images/Teleporter/teleporter_";
+
+  Teleporter(int grid_x, int grid_y, int tp_id) {
     super(WorldTypes.TELEPORT, grid_x, grid_y);
-    
     id = tp_id;
-    
-    image_inactive = new NormalImage(iP + "white");
-    
-    int result = TPVersion();
-    
-    switch(result){
-      case 1: iP = iP + "orange"; break;
-      case 2: iP = iP + "blue"; break;
-    }
-    
-    image_active = new NormalImage(iP);
+
+    image_inactive = new NormalImage(basePath + "white");
+    image_active = new NormalImage(basePath + ((id % 2 == 0) ? "blue" : "orange"));
     setImageContainer(image_active);
   }
-  
-  void useTP(){
-    if(!isActive()){
-       setImageContainer(image_inactive);
-    }
-    else{
-      setImageContainer(image_active);
-    }
+
+  void connectTo(Teleporter other) {
+    connection = other;
   }
-  
-  // Conection zwischen zwei Teleportern finden
-  int[] findConnection(int i){
-    t = null;
-    int[] position = {0,0};
-    
-    for(WorldObject object : world_objects){
-      if(object instanceof Teleporter){
-        t = (Teleporter) object;
-        connect_id = t.getID();
-        if(connect_id == i){
-          position = t.getPosition();
-        }
+
+  Teleporter findConnection() {
+    if (connection != null) {
+      return connection;
+    }
+
+    int connectionID = (id % 2 == 0) ? id - 1 : id + 1;
+    for (WorldObject object : world_objects) {
+      if (object instanceof Teleporter && ((Teleporter) object).id == connectionID) {
+        connection = (Teleporter) object;
+        return connection;
       }
     }
-    
-    return new int[]{position[0], position[1]};
+
+    return null;
   }
-  
-  // Teleporter deaktivieren und cooldown starten
-  void TPdeactivate(){
-    isActive = false;
-    timer.add(new Timer(timer_name + connect_id, 0, 60, 'i'));
-    useTP();
+
+  void updateImage() {
+    setImageContainer(active ? image_active : image_inactive);
   }
-  
-  // Teleporter reaktivieren und cooldown zurücksetzen
-  void TPreactivate(){
-    for(int i = 0; i < timer.size(); i++){
-      Timer ti = timer.get(i);
-      if(ti.timerName() == timer_name + connect_id){
-        if(ti.isfinish()){
-          timer.remove(i);
-          isActive = true;
-        }
+
+  void deactivatePair() {
+    Teleporter other = findConnection();
+    active = false;
+    updateImage();
+
+    if (other != null) {
+      other.active = false;
+      other.updateImage();
+    }
+
+    String timerName = getPairTimerName();
+    for (Timer existing : timer) {
+      if (existing.timerName().equals(timerName)) {
+        return;
       }
     }
-    useTP();
+    timer.add(new Timer(timerName, 0, 60, 'i'));
   }
-  
-  void TPupdate(){
-    if(isActive()){
+
+  void TPupdate() {
+    if (active) {
       return;
     }
-    
-    TPreactivate();
+
+    String pairName = getPairTimerName();
+    for (int i = timer.size() - 1; i >= 0; i--) {
+      Timer current = timer.get(i);
+      if (!current.timerName().equals(pairName)) {
+        continue;
+      }
+
+      if (!current.isFinished()) {
+        return;
+      }
+
+      Teleporter other = findConnection();
+      active = true;
+      updateImage();
+
+      if (other != null) {
+        other.active = true;
+        other.updateImage();
+      }
+
+      timer.remove(i);
+      return;
+    }
   }
-  
-  GridPosition TeleportTo(){
-    if(!isActive()){
+
+  String getPairTimerName() {
+    Teleporter other = findConnection();
+    if (other == null) {
+      return "TeleporterPair_" + id;
+    }
+
+    return "TeleporterPair_" + min(id, other.id) + "_" + max(id, other.id);
+  }
+
+  GridPosition TeleportTo() {
+    if (!active) {
       return null;
     }
-    
-    TPdeactivate();
-    
-    int[] pos;
-    
-    if(TPVersion() == 1){
-          
-      pos = findConnection(id + 1);
-      
+
+    Teleporter other = findConnection();
+    if (other == null) {
+      return null;
     }
-    else{
-      
-      pos = findConnection(id - 1);
-    }
-    
-    return new GridPosition(pos[0], pos[1]);
+
+    deactivatePair();
+    return new GridPosition(other.grid_x, other.grid_y);
   }
-  
-  int TPVersion(){
-    if(id % 2 == 0){
-      return 2;
-    }
-    return 1;
-  }
-  
-  boolean isActive(){return isActive;}
-  
-  int getID(){return id;}
-  
-  void display(){
-    drawObject();
-  }
+
+  boolean isActive() { return active; }
+  int getID() { return id; }
 }
