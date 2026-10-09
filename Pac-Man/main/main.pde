@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 // ============================================================
 // Pac-Man - Processing-native Hauptsketch
 // ============================================================
-// Der Sketch verwendet bewusst keine static-Referenzen.
 // Gemeinsamer Zustand liegt in den normalen Sketch-Variablen.
 
 int BASE_TILE_SIZE = 16;
@@ -101,11 +100,7 @@ void updateLayout() {
     return;
   }
 
-  sidePanelWidth = constrain(
-    width * 0.25f,
-    SIDE_PANEL_MIN_WIDTH,
-    SIDE_PANEL_MAX_WIDTH
-  );
+  sidePanelWidth = constrain(width * 0.25f, SIDE_PANEL_MIN_WIDTH, SIDE_PANEL_MAX_WIDTH);
 
   float availableWidth = max(1, width - sidePanelWidth);
   float availableHeight = max(1, height);
