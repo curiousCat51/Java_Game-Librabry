@@ -1,6 +1,6 @@
 class Target{
   
-  Image image;
+  NormalImage image;
   
   MoveDirectory dir;
   
@@ -19,8 +19,8 @@ class Target{
     this.y = y;
     
     switch(target_color){
-      case 'b': image = new Image("data/images/target/blue"); break;
-      case 'o': image = new Image("data/images/target/orange"); break;
+      case 'b': image = new NormalImage("data/images/target/blue"); break;
+      case 'o': image = new NormalImage("data/images/target/orange"); break;
     }
   }
   
@@ -68,25 +68,25 @@ class Target{
     int pos_y = 0;
     
     if(dir == MoveDirectory.HOCH){
-      pos_y -= speed;
+      pos_y -= TARGET_SPEED;
     }
     
     if(dir == MoveDirectory.RUNTER){
-      pos_y += speed;
+      pos_y += TARGET_SPEED;
     }
     
     if(dir == MoveDirectory.RECHTS){
-      pos_x += speed;
+      pos_x += TARGET_SPEED;
     }
     
     if(dir == MoveDirectory.LINKS){
-      pos_x -= speed;
+      pos_x -= TARGET_SPEED;
     }
     
     return new int[]{pos_x, pos_y};
   }
   
   void display(){
-     image.load(x, y); 
+     image.drawImage(x, y); 
   }
 }

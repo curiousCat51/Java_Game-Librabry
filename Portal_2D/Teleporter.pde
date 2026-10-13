@@ -1,25 +1,23 @@
-class Teleporter{
+class Teleporter extends WorldObject{
   
-  Image image;
+  NormalImage image;
   
   char teleporter_color;
-  int x;
-  int y;
   
-  Teleporter(int x, int y, char tpC){
-    
+  Teleporter(int grid_x, int grid_y, char tpC){
+    super(WorldTypes.TELEPORTER, grid_x, grid_y);
     teleporter_color = tpC;
     
-    this.x = x;
-    this.y = y;
+    this.grid_x = grid_x;
+    this.grid_y = grid_y;
     
     switch(teleporter_color){
-      case 'b': image = new Image("data/images/portal/blue"); break;
-      case 'o': image = new Image("data/images/portal/orange"); break;
+      case 'b': image = new NormalImage("data/images/portal/blue"); break;
+      case 'o': image = new NormalImage("data/images/portal/orange"); break;
     }
   }
   
   void display(){
-    image.load(x, y);
+    drawObject();
   }
 }

@@ -11,8 +11,8 @@ class KeyHandler {
     if (keyCode == RIGHT) key_RIGHT = true;
     if(key == 't') portal_mode = true;
     if(key == 'p') place_portal = true;
-    if(key == '1') portalVersion = "1";
-    if(key == '2') portalVersion = "2";
+    if(key == '1') portalVersion = 1;
+    if(key == '2') portalVersion = 2;
   }
 
   void Released() {
@@ -26,4 +26,8 @@ class KeyHandler {
   boolean getKeyDOWN() { return key_DOWN; }
   boolean getKeyLEFT() { return key_LEFT; }
   boolean getKeyRIGHT() { return key_RIGHT; }
+  
+  boolean isDirectionHeld(){
+    return key_UP || key_DOWN || key_LEFT || key_RIGHT;
+  }
 }
