@@ -20,7 +20,7 @@ ArrayList<WorldObject> world_objects;
 ArrayList<GridPosition> free_tiles;
 ArrayList<GridPosition> out_of_map;
 ArrayList<Target> target;
-ArrayList<Teleporter> teleporter;
+ArrayList<Portal> portal;
 
 boolean[][] blocked_tiles;
 
@@ -50,7 +50,7 @@ void setup(){
   free_tiles = new ArrayList<GridPosition>();
   out_of_map = new ArrayList<GridPosition>();
   target = new ArrayList<Target>();
-  teleporter = new ArrayList<Teleporter>();
+  portal = new ArrayList<Portal>();
   
   imageCache = new ImageCache();
   EventListener = new KeyHandler();
