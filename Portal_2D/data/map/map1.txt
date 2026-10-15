@@ -1,6 +1,0 @@
-xxxxxxxxxxxxx
-x8---------5x
-x|P        |x
-x|  8------6x
-x7--6xxxxxxxx
-xxxxxx

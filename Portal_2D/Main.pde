@@ -1,131 +1,98 @@
-import java.util.ArrayDeque;
+import java.util.*;
 
-float BASE_TILE_SIZE = 32;
-float ANIMATION_SPEED = 0.1f;
+World world;
+WorldRenderer renderer;
 
-float LAYOUT_MARGIN = 20;
+int tile_size = 32;
 
-float SCALE = 1;
-float TILE_SIZE = BASE_TILE_SIZE;
-float PLAYER_SPEED = TILE_SIZE / 4;
-float TARGET_SPEED = TILE_SIZE / 4;
-
-float mapOffsetX;
-float mapOffsetY;
-
-int map_width;
-int map_height;
-
-ArrayList<WorldObject> world_objects;
-ArrayList<GridPosition> free_tiles;
-ArrayList<GridPosition> out_of_map;
-ArrayList<Target> target;
-ArrayList<Portal> portal;
-
-boolean[][] blocked_tiles;
-
-Player player;
-KeyHandler EventListener;
-ImageCache imageCache;
-
-boolean portal_mode;
-boolean place_portal;
-int portalVersion = 1;
-
-float deltaTime = 0.0f;
-int lastFrameTime = 0;
-
-boolean game_over = false;
-boolean victory = false;
 
 void setup(){
-  size(255, 255);
-  surface.setResizable(true);
-  
-  imageMode(CENTER);
-  noSmooth();
-  rectMode(CENTER);
-  
-  world_objects = new ArrayList<WorldObject>();
-  free_tiles = new ArrayList<GridPosition>();
-  out_of_map = new ArrayList<GridPosition>();
-  target = new ArrayList<Target>();
-  portal = new ArrayList<Portal>();
-  
-  imageCache = new ImageCache();
-  EventListener = new KeyHandler();
-  
-  MapLoader loader = new MapLoader(world_objects);
-  loader.loadMap("data/map/map1.txt");
-  
-  updateLayout();
+ fullScreen();
+ 
+ renderer = new WorldRenderer();
+ 
+ loadLevel("data/map/observation_cells.csv");
 }
 
-void updateLayout(){
-  
-  if(map_width <= 0 || map_height <= 0){
-    
+
+void draw() {
+  background(200);
+
+  if (world == null) {
     return;
   }
   
-  float availableWidth = max(1, width);
-  float availableHeight = max(1, height);
-  
-  float tileFromWidth = (availableWidth - 2 * LAYOUT_MARGIN) / map_width;
-  float tileFromHeight = (availableHeight - 2 * LAYOUT_MARGIN) / map_height;
-  
-  TILE_SIZE = max(1, min(tileFromWidth, tileFromHeight));
-  SCALE = TILE_SIZE / BASE_TILE_SIZE;
-  
-  float mapPixelWidth = map_width * TILE_SIZE;
-  float mapPixelHeight = map_height * TILE_SIZE;
-  
-  mapOffsetX = (availableWidth - mapPixelWidth) * 0.5f;
-  mapOffsetY = (availableHeight - mapPixelHeight) * 0.5f;
+  renderer.drawGrid(world, tile_size);
 }
 
-void windowResized(){
- updateLayout();
- 
- for(WorldObject object : world_objects){
-  object.updateLayoutPosition(); 
- }
-}
 
-void draw(){
-  
-  int currentTime = millis();
-  
-  deltaTime = (currentTime - lastFrameTime) / 1000.0f;
-  
-  lastFrameTime = currentTime;
-  
-  background(0, 255, 0);
-  updateGame();
-  renderGame();
-}
 
-void updateGame() {
-  if (player != null) {
-    player.updateProgress();
-    player.move();
+void loadLevel(String filename) {
+  String[] lines = loadStrings(filename);
+
+  if (lines == null || lines.length == 0) {
+    println("Fehler: Level-Datei konnte nicht geladen werden.");
+    return;
   }
-}
 
-void renderGame() {
-  for (WorldObject object : world_objects) {
-    object.drawObject();
+  int rows = lines.length;
+  int cols = split(lines[0], ',').length;
+
+  // 1. Welt erstellen, bevor Objekte registriert werden
+  world = new World(rows, cols);
+
+  // 2. CSV auslesen und Objekte erzeugen
+  for (int row = 0; row < rows; row++) {
+    String[] values = split(lines[row], ',');
+
+    for (int col = 0; col < cols; col++) {
+      int objectType = int(trim(values[col]));
+
+      switch (objectType) {
+        case 0:
+          // Leere Zelle: kein Objekt erzeugen
+          break;
+
+        case 1:
+          // x = col, y = row
+          Player player = new Player(col, row);
+
+          world.registerObject(player, row, col);
+          break;
+          
+        case 2:
+          
+          Wall wall = new Wall(col, row);
+          
+          world.registerObject(wall, row, col);
+          break;
+          
+        case 3:
+        
+          Portal portal_a = new Portal(WorldTypes.PORTAL_A, col, row);
+          
+          world.registerObject(portal_a, row, col);
+          break;
+          
+        case 4:
+        
+          Portal portal_b = new Portal(WorldTypes.PORTAL_B, col, row);
+          
+          world.registerObject(portal_b, row, col);
+          break;
+
+        default:
+          println("Unbekannter Objekttyp: " + objectType);
+          break;
+      }
+    }
   }
-}
 
-void keyPressed() {
-  if (EventListener != null) {
-    EventListener.Pressed();
-  }
-}
+  // 3. Aktuellen Zustand kontrollieren
+  println("Level geladen: " + rows + " Zeilen, " + cols + " Spalten.");
+  println("Registrierte Objekte: " + world.world_objects.size());
 
-void keyReleased() {
-  if (EventListener != null) {
-    EventListener.Released();
+  for (WorldObject object : world.world_objects) {
+    println("Typ: " + object.type + " | Grid X: " + object.grid_x + " | Grid Y: " + object.grid_y);
   }
 }
