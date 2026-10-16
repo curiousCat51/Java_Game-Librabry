@@ -25,6 +25,7 @@ class Fruits extends WorldObject {
 
   void collect() {
     score += fruit_score;
+    logical_dot_count -= FRUIT_SPAWN_DOT_COUNT;
     fruit_count++;
     fruit_counts[fruit_type - 1]++;
     fruit_spawned = false;

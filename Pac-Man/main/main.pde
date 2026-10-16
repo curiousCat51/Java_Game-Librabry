@@ -49,6 +49,7 @@ ImageCache imageCache;
 int score = 0;
 int ghost_score = 200;
 int dot_count = 0;
+int logical_dot_count = 0;
 int total_dot_count = 0;
 
 boolean powerMode = false;
@@ -255,7 +256,7 @@ void newFruit() {
     return;
   }
 
-  if (dot_count >= FRUIT_SPAWN_DOT_COUNT && !fruit_spawned) {
+  if (logical_dot_count >= FRUIT_SPAWN_DOT_COUNT && !fruit_spawned) {
     world_objects.add(new Fruits(fruit_pos_x, fruit_pos_y));
     fruit_spawned = true;
   }

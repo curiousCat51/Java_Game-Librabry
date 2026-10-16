@@ -21,6 +21,7 @@ class Dot extends WorldObject {
   void collect() {
     score += dot_score;
     dot_count++;
+    logical_dot_count++;
 
     if (dot_type == 1) {
       startPowerMode();
