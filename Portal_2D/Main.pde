@@ -1,15 +1,19 @@
 import java.util.*;
 
 World world;
+Player player;
 WorldRenderer renderer;
+KeyHandler EventListener;
 
 int tile_size = 32;
 
 
 void setup(){
- fullScreen();
+ //fullScreen();
+ size(512, 512);
  
  renderer = new WorldRenderer();
+ EventListener = new KeyHandler();
  
  loadLevel("data/map/observation_cells.csv");
 }
@@ -20,6 +24,11 @@ void draw() {
 
   if (world == null) {
     return;
+  }
+  
+  if(player != null){
+   player.processInput();
+   player.calculateNewPosition(player.wishX, player.wishY);
   }
   
   renderer.drawGrid(world, tile_size);
@@ -55,7 +64,7 @@ void loadLevel(String filename) {
 
         case 1:
           // x = col, y = row
-          Player player = new Player(col, row);
+          player = new Player(col, row, EventListener);
 
           world.registerObject(player, row, col);
           break;
@@ -94,5 +103,17 @@ void loadLevel(String filename) {
 
   for (WorldObject object : world.world_objects) {
     println("Typ: " + object.type + " | Grid X: " + object.grid_x + " | Grid Y: " + object.grid_y);
+  }
+}
+
+void keyPressed(){
+ if(EventListener != null){
+  EventListener.handleKeyPressed(keyCode); 
+ }
+}
+
+void keyReleased(){
+  if(EventListener != null){
+   EventListener.handleKeyReleased(keyCode); 
   }
 }

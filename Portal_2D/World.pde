@@ -2,8 +2,7 @@ class World {
 
   GridCell[][] grid;
 
-  ArrayList<WorldObject> world_objects =
-      new ArrayList<WorldObject>();
+  ArrayList<WorldObject> world_objects = new ArrayList<WorldObject>();
 
   int rows;
   int cols;
