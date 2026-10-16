@@ -23,42 +23,52 @@ class WorldRenderer {
       if (object == null) {
         continue;
       }
-  
+      
+      float renderGridX = object.grid_x;
+      float renderGridY = object.grid_y;
+      
+      if (object instanceof Sprite) {
+        Sprite sprite = (Sprite) object;
+      
+        renderGridX = sprite.displayGridX;
+        renderGridY = sprite.displayGridY;
+      }
+      
       if (object.type == WorldTypes.PLAYER) {
         fill(#000000);
         
-        float pixelX = (object.grid_x + 0.5) * tile_size;
-        float pixelY = (object.grid_y + 0.5) * tile_size;
+        float pixelX = (renderGridX + 0.5) * tileSize;
+        float pixelY = (renderGridY + 0.5) * tileSize;
   
-        ellipse(pixelX, pixelY, tile_size * 0.7, tile_size * 0.7);
+        ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
       }
       
       if(object.type == WorldTypes.PORTAL_A){
         fill(#FC8726);
         
-        float pixelX = (object.grid_x + 0.5) * tile_size;
-        float pixelY = (object.grid_y + 0.5) * tile_size;
+        float pixelX = (renderGridX + 0.5) * tileSize;
+        float pixelY = (renderGridY + 0.5) * tileSize;
   
-        ellipse(pixelX, pixelY, tile_size * 0.7, tile_size * 0.7);
+        ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
       }
       
       if(object.type == WorldTypes.PORTAL_B){
         fill(#0DC6FC);
         
-        float pixelX = (object.grid_x + 0.5) * tile_size;
-        float pixelY = (object.grid_y + 0.5) * tile_size;
+        float pixelX = (renderGridX + 0.5) * tileSize;
+        float pixelY = (renderGridY + 0.5) * tileSize;
   
-        ellipse(pixelX, pixelY, tile_size * 0.7, tile_size * 0.7);
+        ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
       }
       
       if(object.type == WorldTypes.WALL){
         fill(#939393);
         
-        float pixelX = (object.grid_x + 0.5) * tile_size;
-        float pixelY = (object.grid_y + 0.5) * tile_size;
+        float pixelX = (renderGridX + 0.5) * tileSize;
+        float pixelY = (renderGridY + 0.5) * tileSize;
   
         rectMode(CENTER);
-        rect(pixelX, pixelY, tile_size * 0.7, tile_size * 0.7);
+        rect(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
         rectMode(CORNER);
       }
     }

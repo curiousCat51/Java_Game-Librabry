@@ -2,6 +2,7 @@ import java.util.*;
 
 World world;
 Player player;
+Target target;
 WorldRenderer renderer;
 KeyHandler EventListener;
 
@@ -26,9 +27,8 @@ void draw() {
     return;
   }
   
-  if(player != null){
-   player.processInput();
-   player.calculateNewPosition(player.wishX, player.wishY);
+  if (player != null) {
+    player.updateMovementInput(world);
   }
   
   renderer.drawGrid(world, tile_size);
@@ -67,6 +67,10 @@ void loadLevel(String filename) {
           player = new Player(col, row, EventListener);
 
           world.registerObject(player, row, col);
+          
+          target = new Target(player.grid_x, player.grid_y, EventListener);
+
+          world.registerObject(target, target.grid_y, target.grid_x);
           break;
           
         case 2:

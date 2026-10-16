@@ -10,4 +10,14 @@ class GridCell{
  void removeObject(WorldObject object){
   objects.remove(object); 
  }
+ 
+ boolean containsWall(){
+  for(WorldObject object : objects){
+   if(object.type == WorldTypes.WALL){
+    return true; 
+   }
+  }
+  
+  return false;
+ }
 }
