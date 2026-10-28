@@ -22,6 +22,10 @@ void setup(){
 
 void draw() {
   background(200);
+  
+  if(!EventListener.portal_mode){
+   target.resetToPlayer(player); 
+  }
 
   if (world == null) {
     return;
@@ -31,11 +35,18 @@ void draw() {
     player.updateMovementInput(world);
   }
   
+  if(target != null){
+   target.updateMovementInput(player, world); 
+  }
+  
+  if(EventListener.portal_mode && target != null && player != null){
+   renderer.drawReachableCells(target, player, world, tile_size); 
+  }
   renderer.drawGrid(world, tile_size);
 }
 
 
-
+// Lädt die gewünschte Karte als Welt
 void loadLevel(String filename) {
   String[] lines = loadStrings(filename);
 
@@ -64,7 +75,7 @@ void loadLevel(String filename) {
 
         case 1:
           // x = col, y = row
-          player = new Player(col, row, EventListener);
+          player = new Player(row, col, EventListener);
 
           world.registerObject(player, row, col);
           
@@ -75,21 +86,21 @@ void loadLevel(String filename) {
           
         case 2:
           
-          Wall wall = new Wall(col, row);
+          Wall wall = new Wall(row, col);
           
           world.registerObject(wall, row, col);
           break;
           
         case 3:
         
-          Portal portal_a = new Portal(WorldTypes.PORTAL_A, col, row);
+          Portal portal_a = new Portal(WorldTypes.PORTAL_A, row, col);
           
           world.registerObject(portal_a, row, col);
           break;
           
         case 4:
         
-          Portal portal_b = new Portal(WorldTypes.PORTAL_B, col, row);
+          Portal portal_b = new Portal(WorldTypes.PORTAL_B, row, col);
           
           world.registerObject(portal_b, row, col);
           break;

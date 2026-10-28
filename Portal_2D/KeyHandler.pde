@@ -11,7 +11,7 @@ class KeyHandler {
     if (code == DOWN)  keyDown = true;
     if (code == LEFT)  keyLeft = true;
     if (code == RIGHT) keyRight = true;
-    if(key == 't') portal_mode = !portal_mode;
+    if(key == 't' || key == 'T') portal_mode = !portal_mode;
   }
 
   void handleKeyReleased(int code) {

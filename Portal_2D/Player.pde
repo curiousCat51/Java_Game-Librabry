@@ -13,10 +13,12 @@ class Player extends Sprite {
     this.EventListener = EventListener;
   }
   
+  // Prüft ob ein gewünschtes Feld frei ist
   boolean canMoveToTarget(World world) {
-    return !world.isWallAt(targetGridY, targetGridX);
+    return !world.isWallAt(targetGridX, targetGridY);
   }
   
+  // Prüft ob eine Bewegung möglich ist
   boolean tryMove(World world) {
   
     // Ohne Richtung gibt es keinen Bewegungsversuch.
@@ -24,6 +26,7 @@ class Player extends Sprite {
       return false;
     }
   
+    // Berechnen der theoretischen neuen Position
     calculateNewPosition(wishX, wishY);
     
     // Prüfen, ob das Zielfeld begehbar ist.
@@ -35,6 +38,7 @@ class Player extends Sprite {
     return true;
   }
   
+  // Aktualisiert die Bewegungsrichtung anhand der Eingabe des Spielers
   void updateMovementInput(World world) {
   
     // Eine laufende Bewegung zuerst aktualisieren.
@@ -42,6 +46,10 @@ class Player extends Sprite {
   
     // Während der Bewegung keinen neuen Schritt starten.
     if (isMoving()) {
+      return;
+    }
+    
+    if(EventListener.portal_mode){
       return;
     }
   
@@ -65,10 +73,12 @@ class Player extends Sprite {
     }
   }
   
+  // Wird eine Richtungstaste gehalten
   boolean isDirectionHeld() {
     return EventListener.keyUp || EventListener.keyDown || EventListener.keyLeft || EventListener.keyRight;
   }
   
+  // Überschreibt die moveCompleted Methode, wenn eine Richtungstaste gehalten wird
   @Override void moveCompleted() {
     repeatStartTime = millis();
   }

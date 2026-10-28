@@ -20,11 +20,12 @@ class World {
     }
   }
   
-  // Liegt weine Position innerhalb der Welt
+  // Liegt eine Position innerhalb der Welt
   boolean isInsideGrid(int row, int col){
    return row >= 0 && row < rows && col >= 0 && col < cols; 
   }
   
+  // Befindet sich an einer Position eine Wand
   boolean isWallAt(int row, int col){
    if(!isInsideGrid(row, col)){
     return true; 
@@ -33,6 +34,7 @@ class World {
    return grid[row][col].containsWall();
   }
   
+  // Bewegt ein Objekt von einem Feld auf ein anderes
   void moveObject(WorldObject object, int oldRow, int oldCol, int newRow, int newCol) {
     if (object == null || !isInsideGrid(oldRow, oldCol) || !isInsideGrid(newRow, newCol)) {
       return;
@@ -41,15 +43,17 @@ class World {
     grid[oldRow][oldCol].removeObject(object);
     grid[newRow][newCol].addObject(object);
   
-    object.grid_x = newCol;
-    object.grid_y = newRow;
+    object.grid_x = newRow;
+    object.grid_y = newCol;
   }
 
+  // Fügt ein Objekt der hinzu Liste
   void registerObject(WorldObject object, int row, int col) {
     grid[row][col].addObject(object);
     world_objects.add(object);
   }
 
+  // Entfernt ein Objekt von der Liste
   void removeObject(WorldObject object, int row, int col) {
     grid[row][col].removeObject(object);
     world_objects.remove(object);

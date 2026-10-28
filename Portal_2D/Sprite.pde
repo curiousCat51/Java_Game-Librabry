@@ -32,6 +32,7 @@ class Sprite extends WorldObject {
     targetGridY = grid_y + wishY;
   }
   
+  // Aktualisiert die Position zwischen zwei Feldern
   void updateMovement(World world) {
   
     // Keine Animation nötig, wenn der Sprite stillsteht.
@@ -48,7 +49,7 @@ class Sprite extends WorldObject {
   
     // Bei 100 % die Bewegung abschließen.
     if (moveProgress >= 1.0f) {
-      world.moveObject(this, grid_y, grid_x, targetGridY, targetGridX);
+      world.moveObject(this, grid_x, grid_y, targetGridX, targetGridY);
   
       displayGridX = grid_x;
       displayGridY = grid_y;
@@ -57,12 +58,13 @@ class Sprite extends WorldObject {
     }
   }
   
+  // Verarbeitet die Eingaben des Spielers
   void processInput(){
    wishX = 0;
    wishY = 0;
    
    if(EventListener.keyUp){
-     wishY = -1;
+    wishY = -1;
    }
    else if(EventListener.keyDown){
     wishY = 1; 
