@@ -47,8 +47,14 @@ class Target extends Sprite{
    int distanceX = abs(newX - player.grid_x);
    int distanceY = abs(newY - player.grid_y);
    
-   if(distanceX + distanceY > 4){
+   if(distanceX + distanceY > target_distance){
      return false;
+   }
+   
+   boolean[][] reachable = getReachableCells(player, world);
+   
+   if(!reachable[newY][newX]){
+    return false; 
    }
    
    return true;
@@ -129,20 +135,28 @@ class Target extends Sprite{
     int row = current[0];
     int col = current[1];
     
-    // Nach vier Schrittten endet die Suche.
-    if(distance[row][col] >= 4){
-      continue;
-    }
+    
     
     for(int[] direction : directions){
      int newRow = row + direction[0];
      int newCol = col + direction[1];
      
-     if(!world.isInsideGrid(newRow, newCol)){
+     if(distance[row][col] >= target_distance){
       continue; 
      }
      
-     if(world.isWallAt(newRow, newCol)){
+     if(!world.isInsideGrid(newCol, newRow)){
+      continue; 
+     }
+     
+     int distanceX = abs(newCol - player.grid_x);
+     int distanceY = abs(newRow - player.grid_y);
+      
+     if(distanceX + distanceY > target_distance){
+       continue;
+     }
+     
+     if(world.isWallAt(newCol, newRow)){
        continue;
      }
      
@@ -158,5 +172,24 @@ class Target extends Sprite{
    }
    
    return reachable;
+  }
+  
+  // Prüft welche Felder innerhalb der geometrischen Reichweite liegen
+  boolean[][] getCellsInRange(Player player, World world){
+    boolean[][] inRange = new boolean[world.rows][world.cols];
+    
+    for(int row = 0; row < world.rows; row++){
+      for(int col = 0; col < world.cols; col++){
+        
+        int distanceX = abs(col - player.grid_x);
+        int distanceY = abs(row - player.grid_y);
+        
+        if(distanceX + distanceY <= target_distance){
+          inRange[row][col] = true;
+        }
+      }
+    }
+    
+    return inRange;
   }
 }

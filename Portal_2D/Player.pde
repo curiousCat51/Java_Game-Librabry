@@ -6,6 +6,8 @@ class Player extends Sprite {
   int repeatStartTime = 0;
   int repeatDelay = 120;
   
+  int health = 3;
+  
 
   Player(int grid_x, int grid_y, KeyHandler EventListener) {
     super(WorldTypes.PLAYER, grid_x, grid_y);
@@ -31,7 +33,7 @@ class Player extends Sprite {
     
     // Prüfen, ob das Zielfeld begehbar ist.
     if (!canMoveToTarget(world)) {
-      return false;
+      return !world.isWallAt(targetGridX, targetGridY);
     }
   
     // Das Zielfeld ist gültig.
@@ -78,6 +80,19 @@ class Player extends Sprite {
     return EventListener.keyUp || EventListener.keyDown || EventListener.keyLeft || EventListener.keyRight;
   }
   
+  // Fügt dem Spieler Schaden zu
+  void takeDamage(int damage){
+    health -= damage;
+    
+    health = max(0, health);
+    
+    println("Spieler-Lebenspunkte: " + health);
+  }
+  
+  // Beim Neustart werden die Lebenspunkte zurückgesetzt
+  void resetHealth(){
+   health = 3; 
+  }
   // Überschreibt die moveCompleted Methode, wenn eine Richtungstaste gehalten wird
   @Override void moveCompleted() {
     repeatStartTime = millis();

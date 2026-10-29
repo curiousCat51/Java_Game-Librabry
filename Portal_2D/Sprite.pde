@@ -14,6 +14,8 @@ class Sprite extends WorldObject {
   
   int wishX = 0;
   int wishY = 0;
+  
+  boolean portalReady = true;
 
   Sprite(WorldTypes type, int grid_x, int grid_y) {
     super(type, grid_x, grid_y);
@@ -50,6 +52,8 @@ class Sprite extends WorldObject {
     // Bei 100 % die Bewegung abschließen.
     if (moveProgress >= 1.0f) {
       world.moveObject(this, grid_x, grid_y, targetGridX, targetGridY);
+      
+      world.tryTeleport(this);
   
       displayGridX = grid_x;
       displayGridY = grid_y;
