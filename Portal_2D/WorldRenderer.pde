@@ -62,6 +62,56 @@ class WorldRenderer {
         rect((enemy.grid_x + 1) * tileSize, enemy.grid_y * tileSize, tileSize, tileSize);
       }
     }
+    
+    // Barrieren der Gegner zeichnen
+    for(WorldObject object : world.world_objects){
+     
+      if(!(object instanceof Enemy)){
+       
+        continue;
+      }
+      
+      Enemy enemy = (Enemy) object;
+      
+      if(enemy.barrier == null){
+        
+        continue;
+      }
+      
+      int[][] occupiedCells = enemy.barrier.getOccupiedCells();
+      
+      for(int[] cell : occupiedCells){
+       
+        int x = cell[0];
+        int y = cell[1];
+        
+        // Barriere außerhalb des Grids nicht zeichnen.
+        if(!world.isInsideGrid(x, y)){
+         
+          continue;
+        }
+        
+        float pixelX = x * tileSize;
+        float pixelY = y * tileSize;
+        
+        // Transparent blaue Fläche
+        noStroke();
+        fill(0, 180, 255, 100);
+        
+        
+        rectMode(CORNER);
+        rect(pixelX, pixelY, tileSize, tileSize);
+        
+        // Sichtbare Umrandung
+        noFill();
+        stroke(0, 180, 255);
+        strokeWeight(2);
+        
+        rect(pixelX + 2, pixelY + 2, tileSize - 4, tileSize - 4);
+      }
+    }
+    
+    strokeWeight(1);
   
     // Spieler zeichnen
     noStroke();
@@ -158,6 +208,52 @@ class WorldRenderer {
           rectMode(CENTER);
           rect(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
           rectMode(CORNER);
+        }
+        
+        break;
+        
+        case DOOR: {
+          
+          Door door = (Door) object;
+        
+          float pixelX = (renderGridX + 0.5f) * tileSize;
+          float pixelY = (renderGridY + 0.5f) * tileSize;
+        
+          rectMode(CENTER);
+        
+          if (door.open) {
+            // Geöffnete Tür: grüner Rahmen
+            noFill();
+            stroke(0, 180, 0);
+            strokeWeight(3);
+            rect(pixelX, pixelY, tileSize * 0.8f, tileSize * 0.8f);
+          } else {
+            // Geschlossene Tür: braune Fläche
+            noStroke();
+            fill(130, 75, 35);
+            rect(pixelX, pixelY, tileSize * 0.8f, tileSize * 0.8f);
+          }
+        
+          rectMode(CORNER);
+          strokeWeight(1);
+        }
+        
+        break;
+        
+        case BUTTON: {
+          Button button = (Button) object;
+        
+          float pixelX = (renderGridX + 0.5f) * tileSize;
+          float pixelY = (renderGridY + 0.5f) * tileSize;
+        
+          if (button.active) {
+            fill(0, 220, 0);
+          } else {
+            fill(120, 120, 120);
+          }
+        
+          noStroke();
+          ellipse(pixelX, pixelY, tileSize * 0.45f, tileSize * 0.45f);
         }
         
         break;

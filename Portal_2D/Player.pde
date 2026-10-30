@@ -17,7 +17,7 @@ class Player extends Sprite {
   
   // Prüft ob ein gewünschtes Feld frei ist
   boolean canMoveToTarget(World world) {
-    return !world.isWallAt(targetGridX, targetGridY);
+    return !world.isWallAt(targetGridX, targetGridY) && !world.isBarrierAt(targetGridX, targetGridY);
   }
   
   // Prüft ob eine Bewegung möglich ist
@@ -33,7 +33,7 @@ class Player extends Sprite {
     
     // Prüfen, ob das Zielfeld begehbar ist.
     if (!canMoveToTarget(world)) {
-      return !world.isWallAt(targetGridX, targetGridY);
+      return false;
     }
   
     // Das Zielfeld ist gültig.
@@ -96,5 +96,9 @@ class Player extends Sprite {
   // Überschreibt die moveCompleted Methode, wenn eine Richtungstaste gehalten wird
   @Override void moveCompleted() {
     repeatStartTime = millis();
+  }
+  
+  @Override boolean canActivateButton(){
+    return true; 
   }
 }

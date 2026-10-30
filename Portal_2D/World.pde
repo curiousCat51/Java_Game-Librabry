@@ -42,6 +42,36 @@ class World {
    return grid[y][x].containsWall();
   }
   
+  // Prüft ob sich an einer Position eine Barriere befindet.
+  boolean isBarrierAt(int x, int y){
+   
+    for(WorldObject object : world_objects){
+     
+      if(!(object instanceof Enemy)){
+       
+        continue;
+      }
+      
+      Enemy enemy = (Enemy) object;
+      
+      if(enemy.barrier == null){
+       
+        continue;
+      }
+      
+      int[][] occupiedCells = enemy.barrier.getOccupiedCells();
+      
+      for(int[] cell : occupiedCells){
+       
+        if(cell[0] == x && cell[1] == y){
+         
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
   // Bewegt ein Objekt von einer Position zur nächsten.
   void moveObject(WorldObject object, int oldX, int oldY, int newX, int newY){
     if(object == null || !isInsideGrid(oldX, oldY) || !isInsideGrid(newX, newY)){
@@ -71,12 +101,13 @@ class World {
     }
    }
    
-   // Nach einer Übertragung muss die Figur das Portal erst verlassen.
-   if(!sprite.portalReady){
-     if(portalHere == null){
-       sprite.portalReady = true;
-     }
-     return false;
+   
+   // Wurde das zuletzt verwendete Portal verlassen?
+   if(!sprite.portalReady && portalHere != sprite.lastPortal){
+    
+     sprite.portalReady = true;
+     sprite.lastPortal = null;
+     sprite.lastPartnerPortal = null;
    }
    
    if(portalHere == null){
@@ -100,9 +131,28 @@ class World {
     return false; 
    }
    
+   // Prüfen, ob beide Portale noch die selben sind.
+   if(!sprite.portalReady && portalHere == sprite.lastPortal && destinationPortal == sprite.lastPartnerPortal){
+    
+     return false;
+   }
+   
+   // Sprite zum Zielportal bewegen.
    moveObject(sprite, sprite.grid_x, sprite.grid_y, destinationPortal.grid_x, destinationPortal.grid_y);
    
+   // Sichtbare Position aktualisieren.
+   sprite.displayGridX = sprite.grid_x;
+   sprite.displayGridY = sprite.grid_y;
+   
+   // Bewegungsziel aktualisieren.
+   sprite.targetGridX = sprite.grid_x;
+   sprite.targetGridY = sprite.grid_y;
+   
+   // Verwendetes Portalpaar speichern.
    sprite.portalReady = false;
+   sprite.lastPortal = destinationPortal;
+   sprite.lastPartnerPortal = portalHere;
+   
    return true;
   }
 
@@ -218,4 +268,113 @@ class World {
   
     return true;
   }
+  
+  // Prüft die Verknüpfung der Türen und Buttons
+  boolean linkDoorsAndButtons() {
+
+    for (WorldObject obj : world_objects) {
+  
+      if (obj.type == WorldTypes.BUTTON) {
+  
+        Button button = (Button) obj;
+        Door matchingDoor = null;
+        int buttonCount = 0;
+  
+        for (WorldObject other : world_objects) {
+  
+          if (other.type == WorldTypes.BUTTON) {
+            Button otherButton = (Button) other;
+  
+            if (otherButton.link_id == button.link_id) {
+              buttonCount++;
+            }
+          }
+  
+          if (other.type == WorldTypes.DOOR) {
+            Door door = (Door) other;
+  
+            if (door.link_id == button.link_id) {
+  
+              if (matchingDoor != null) {
+                println("Fehler: Mehrere Türen mit link_id " + button.link_id);
+                return false;
+              }
+  
+              matchingDoor = door;
+            }
+          }
+        }
+  
+        if (buttonCount > 1) {
+          println("Fehler: Mehrere Buttons mit link_id " + button.link_id);
+          return false;
+        }
+  
+        if (matchingDoor == null) {
+          println("Fehler: Keine passende Tür für Button mit link_id " + button.link_id);
+          return false;
+        }
+  
+        button.linkedDoor = matchingDoor;
+      }
+    }
+  
+    // Prüfen, ob jede Tür einen passenden Button besitzt
+    for (WorldObject obj : world_objects) {
+  
+      if (obj.type == WorldTypes.DOOR) {
+  
+        Door door = (Door) obj;
+        boolean matchingButtonFound = false;
+  
+        for (WorldObject other : world_objects) {
+  
+          if (other.type == WorldTypes.BUTTON) {
+            Button button = (Button) other;
+  
+            if (button.link_id == door.link_id) {
+              matchingButtonFound = true;
+              break;
+            }
+          }
+        }
+  
+        if (!matchingButtonFound) {
+          println("Fehler: Kein passender Button für Tür mit link_id " + door.link_id);
+          return false;
+        }
+      }
+    }
+  
+    return true;
+  }
+  
+  void updateButtons() {
+    
+      for (WorldObject object : world_objects) {
+    
+        if (!(object instanceof Button)) {
+          continue;
+        }
+    
+        Button button = (Button) object;
+        boolean occupied = false;
+    
+        for (WorldObject other : world_objects) {
+    
+          if (other == button || !other.canActivateButton()) {
+            continue;
+          }
+    
+          if (other.grid_x == button.grid_x &&
+              other.grid_y == button.grid_y) {
+            occupied = true;
+            break;
+          }
+        }
+    
+        button.active = occupied;
+        button.linkedDoor.open = occupied;
+      }
+    }
 }

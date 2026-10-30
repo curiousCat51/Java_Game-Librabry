@@ -1,6 +1,8 @@
-class Enemy extends WorldObject{
+class Enemy extends Sprite{
  
   EnemyType enemyType;
+  
+  Barrier barrier;
   
   int health;
   
@@ -16,17 +18,23 @@ class Enemy extends WorldObject{
   int areaAttackWarningTimer = 0;
   int areaAttackWarningDuration = 30;
   
-  Enemy(EnemyType enemyType, int grid_x, int grid_y, int health, int attackInterval, int shootDirectionX, int shootDirectionY){
-   super(WorldTypes.ENEMY, grid_x, grid_y);
-   
-   this.enemyType = enemyType;
-   this.health = health;
-   this.attackInterval = attackInterval;
-   this.attackTimer = 0;
-   
-   this.shootDirectionX = shootDirectionX;
-   this.shootDirectionY = shootDirectionY;
+  int moveDirectionX = 0;
+  int moveDirectionY = 1;
+  
+ Enemy(EnemyType enemyType, int grid_x, int grid_y, int shootDirectionX, int shootDirectionY) {
+  super(WorldTypes.ENEMY, grid_x, grid_y);
+
+  this.enemyType = enemyType;
+  this.health = 3;
+  this.attackInterval = 60;
+  this.attackTimer = 0;
+  this.shootDirectionX = shootDirectionX;
+  this.shootDirectionY = shootDirectionY;
+
+  if (enemyType == EnemyType.BARRIER_CREATOR) {
+    barrier = new Barrier(this);
   }
+}
   
   // Erzeugt eine Warnung bei Flächenangriff
   void startAreaAttackWarning(){
@@ -93,5 +101,19 @@ class Enemy extends WorldObject{
     int distance = abs(grid_x - target.grid_x) + abs(grid_y - target.grid_y);
     
     return distance == 1;
+  }
+  
+  // Aktualisiert die Bewegungsrichtung des Gegners
+  void setMovementDirection(int directionX, int directionY){
+   if(abs(directionX) + abs(directionY) != 1){
+     return;
+   }
+   
+   moveDirectionX = directionX;
+   moveDirectionY = directionY;
+  }
+  
+  @Override boolean canActivateButton(){
+    return true; 
   }
 }

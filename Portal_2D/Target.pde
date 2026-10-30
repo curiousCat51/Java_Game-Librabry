@@ -95,12 +95,17 @@ class Target extends Sprite{
   }
   
   // Lässt das Target an die Spieler Position zurückkehren, sobald der Portal-Modus endet
-  void resetToPlayer(Player player){
-   grid_x = player.grid_x;
-   grid_y = player.grid_y;
-   
-   wishX = 0;
-   wishY = 0;
+  void resetToPlayer(Player player) {
+    if (player == null) {
+      println("Fehler: Player ist null.");
+      return;
+    }
+  
+    grid_x = player.grid_x;
+    grid_y = player.grid_y;
+  
+    wishX = 0;
+    wishY = 0;
   }
   
   // Prüft welche Felder das Target erreichen kann

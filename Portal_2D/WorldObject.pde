@@ -9,4 +9,8 @@ class WorldObject{
     this.grid_x = grid_x;
     this.grid_y = grid_y;
   }
+  
+  boolean canActivateButton(){
+    return false; 
+  }
 }

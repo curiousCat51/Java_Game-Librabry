@@ -1,11 +1,15 @@
 import java.util.*;
 
 // TODO:
-// - Letzter Gegnertyp
-// - Teleportationslogik für Gegner
-// - Bilder einbinden
+// - Letzter Gegnertyp <- fertig
+// - Teleportationslogik für Gegner <- fertig
+// - verschiedene Wandtypen <- fertig
+// - Türen und Buttons <- dran
+// - Neuer Level Loader <- dran
 // - Neustart anpassen
-// - verschiedene Wandtypen
+// - Bilder einbinden
+// - Kamera
+// - (Boxen)
 
 World world;
 Player player;
@@ -25,15 +29,44 @@ void setup(){
  renderer = new WorldRenderer();
  EventListener = new KeyHandler();
  
- loadLevel("data/map/observation_cells.csv");
+    LevelLoader loader = new LevelLoader();
+    world = loader.loadLevel("data/map/level_test.csv", EventListener);
+    
+    if (world == null) {
+      println("Level konnte nicht geladen werden.");
+      return;
+    }
+    
+    // Player suchen
+    player = null;
+    target = null;
+    
+    for (WorldObject obj : world.world_objects) {
+      if (obj.type == WorldTypes.PLAYER) {
+        player = (Player) obj;
+        break;
+      }
+    }
+    
+    // Target erstellen
+    if (player != null) {
+      target = new Target(player.grid_x, player.grid_y, EventListener);
+      world.registerObject(target, target.grid_x, target.grid_y);
+    } else {
+      println("Fehler: Kein Player gefunden.");
+    }
+    
+    world = loader.loadLevel("data/map/observation_cells.csv", EventListener);
+  
+  //loadLevel("data/map/observation_cells.csv");
 }
 
 
 void draw() {
   background(200);
   
-  if(!EventListener.portal_mode){
-   target.resetToPlayer(player); 
+  if (!EventListener.portal_mode && player != null && target != null) {
+    target.resetToPlayer(player);
   }
 
   if (world == null) {
@@ -48,6 +81,8 @@ void draw() {
     text("GAME OVER", width / 2, height / 2);
     return;
   }
+  
+  updateEnemyTeleportation();
   
   ArrayList<Enemy> defeatedEnemies = new ArrayList<Enemy>();
   
@@ -120,6 +155,10 @@ void draw() {
    target.updateMovementInput(player, world); 
   }
   
+  if (world != null) {
+    world.updateButtons();
+  }
+  
  // Portal-Modus abbrechen
  if(EventListener.cancelPortalRequested){
   EventListener.portal_mode = false;
@@ -128,13 +167,20 @@ void draw() {
   EventListener.placePortalRequested = false;
  }
  
- // Ausgewähltes Portal platzieren
+ 
+  // Ausgewähltes Portal platzieren
  if(EventListener.portal_mode && EventListener.placePortalRequested && EventListener.selectedPortalType != null && target != null && world != null){
-   world.placePortal(EventListener.selectedPortalType, target.grid_x, target.grid_y);
-   
-   EventListener.placePortalRequested = false;
-   EventListener.portal_mode = false;
-   EventListener.selectedPortalType = null;
+   // Es darf kein Portal platziert werden, wenn das Target sich innerhalb einer Barriere befindet
+   if(!world.isBarrierAt(target.grid_x, target.grid_y)){
+     world.placePortal(EventListener.selectedPortalType, target.grid_x, target.grid_y);
+     
+     EventListener.placePortalRequested = false;
+     EventListener.portal_mode = false;
+     EventListener.selectedPortalType = null;
+   }
+   else{
+    EventListener.cancelPortalRequested = true; 
+   }
  }
  
  if(EventListener.portal_mode && target != null && player != null){
@@ -246,7 +292,7 @@ void loadLevel(String filename) {
           
         case 2:
           
-          Wall wall = new Wall(col, row);
+          Wall wall = new Wall(col, row, WallType.GERADE, Orientation.SENKRECHT);
           
           world.registerObject(wall, col, row);
           break;
@@ -272,14 +318,20 @@ void loadLevel(String filename) {
     }
   }
   
-  //Testgegner erzeugen und regristrieren
-  Enemy enemy1 = new Enemy(EnemyType.LINE_SHOOTER, 3, 2, 3, 60, 1, 0);
+   //Testgegner erzeugen und regristrieren
+   Enemy enemy1 = new Enemy(EnemyType.LINE_SHOOTER, 0, 2, 1, 0);
   
-  world.registerObject(enemy1, enemy1.grid_x, enemy1.grid_y);
+   world.registerObject(enemy1, enemy1.grid_x, enemy1.grid_y);
   
-  Enemy enemy2 = new Enemy(EnemyType.AREA_ATTACKER, 5, 3, 3, 60, 0, 1);
+   Enemy enemy2 = new Enemy(EnemyType.AREA_ATTACKER, 3, 5, 0, 1);
   
-  world.registerObject(enemy2, enemy2.grid_x, enemy2.grid_y);
+   world.registerObject(enemy2, enemy2.grid_x, enemy2.grid_y);
+  
+  Enemy enemy3 = new Enemy(EnemyType.BARRIER_CREATOR, 3, 1, 0, 1);
+  
+  enemy3.setMovementDirection(0, 1);
+  
+  world.registerObject(enemy3, enemy3.grid_x, enemy3.grid_y);
 
   // 3. Aktuellen Zustand kontrollieren
   println("Level geladen: " + rows + " Zeilen, " + cols + " Spalten.");
@@ -287,6 +339,22 @@ void loadLevel(String filename) {
 
   for (WorldObject object : world.world_objects) {
     println("Typ: " + object.type + " | Grid X: " + object.grid_x + " | Grid Y: " + object.grid_y);
+  }
+}
+
+// Prüft, ob sich ein Gegner auf einem Portal befindet.
+void updateEnemyTeleportation(){
+ 
+  for(WorldObject object : world.world_objects){
+   
+    if(!(object instanceof Enemy)){
+     
+      continue; 
+    }
+    
+    Enemy enemy = (Enemy) object;
+    
+    world.tryTeleport(enemy);
   }
 }
 
@@ -304,7 +372,7 @@ void keyPressed(){
   EventListener.handleKeyPressed(keyCode); 
  }
  
- // Verhindert, das Processing bei ESC den Skecth beendet.
+ // Verhindert, das Processing bei ESC den Sketch beendet.
  if(key == ESC){
   key = 0; 
  }

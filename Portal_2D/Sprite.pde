@@ -16,6 +16,9 @@ class Sprite extends WorldObject {
   int wishY = 0;
   
   boolean portalReady = true;
+  
+  WorldObject lastPortal;
+  WorldObject lastPartnerPortal;
 
   Sprite(WorldTypes type, int grid_x, int grid_y) {
     super(type, grid_x, grid_y);
