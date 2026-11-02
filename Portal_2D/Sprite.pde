@@ -17,8 +17,22 @@ class Sprite extends WorldObject {
   
   boolean portalReady = true;
   
+  int facingX = 0;
+  int facingY = 1;
+  
+  int maxHealth = 10;
+  int health = 10;
+  
+  int healthBarDuration = 2000;
+  int healthBarShownUntil = 0;
+  
+  boolean interactWasDown = false;
+  WorldObject carriedObject = null;
+  
   WorldObject lastPortal;
   WorldObject lastPartnerPortal;
+  
+  Player carriedBy = null;
 
   Sprite(WorldTypes type, int grid_x, int grid_y) {
     super(type, grid_x, grid_y);
@@ -91,5 +105,37 @@ class Sprite extends WorldObject {
   
   void moveCompleted() {
     // Wird nach Abschluss einer Bewegung aufgerufen.
+  }
+  
+  int getCurrentGridX() {
+    if (carriedBy != null) {
+      return carriedBy.grid_x + carriedBy.facingX;
+    }
+  
+    return grid_x;
+  }
+  
+  int getCurrentGridY() {
+    if (carriedBy != null) {
+      return carriedBy.grid_y + carriedBy.facingY;
+    }
+  
+    return grid_y;
+  }
+  
+  // Verursacht Schaden
+  void takeDamage(int damage) {
+    health = max(0, health - damage);
+    healthBarShownUntil = millis() + healthBarDuration;
+  }
+  
+  // Ist Lebensanzeige sichtbar?
+  boolean isHealthBarVisible() {
+    return millis() < healthBarShownUntil;
+  }
+  
+  // Berechnet den Prozentwert an Leben
+  float getHealthPercent() {
+    return (float) health / maxHealth;
   }
 }

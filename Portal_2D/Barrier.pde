@@ -14,8 +14,8 @@ class Barrier{
     int[][] cells = new int[barrier_length][2];
     
     // Position direkt vor dem Gegner
-    int frontX = owner.grid_x + owner.moveDirectionX;
-    int frontY = owner.grid_y + owner.moveDirectionY;
+    int frontX = owner.getCurrentGridX() + owner.moveDirectionX;
+    int frontY = owner.getCurrentGridY() + owner.moveDirectionY;
     
     // Senkrechte Richtung zur Bewegungsrichtung
     int perpendicularX = -owner.moveDirectionY;

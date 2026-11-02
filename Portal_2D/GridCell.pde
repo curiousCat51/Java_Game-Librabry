@@ -20,7 +20,42 @@ class GridCell{
     return true; 
    }
   }
-  
   return false;
+ }
+ 
+ // Prüft, ob eine bestimmte Gridzelle eine Tür enthält
+ boolean containsDoor(){
+  for(WorldObject object : objects){
+   if(object.type == WorldTypes.DOOR){
+     
+     return true;
+   }
+  }
+  return false;
+ }
+ 
+ // Überprüft, ob eine Tür in einer bestimmten GridZelle offen ist oder nicht
+ boolean isDoorClosed(){
+   for(WorldObject object : objects){
+     if(object.type == WorldTypes.DOOR){
+       Door door = (Door) object;
+       
+       if(door.open){
+         return false;
+       }
+       return true;
+     }
+   }
+   return false;
+ }
+ 
+ // Überprüft, ob in einer bestimmten GridZelle eine Kiste steht
+ boolean containsCrate(){
+   for(WorldObject object : objects){
+    if(object.type == WorldTypes.CRATE){
+     return true; 
+    }
+   }
+   return false;
  }
 }

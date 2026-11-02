@@ -6,8 +6,6 @@ class Player extends Sprite {
   int repeatStartTime = 0;
   int repeatDelay = 120;
   
-  int health = 3;
-  
 
   Player(int grid_x, int grid_y, KeyHandler EventListener) {
     super(WorldTypes.PLAYER, grid_x, grid_y);
@@ -17,7 +15,26 @@ class Player extends Sprite {
   
   // Prüft ob ein gewünschtes Feld frei ist
   boolean canMoveToTarget(World world) {
-    return !world.isWallAt(targetGridX, targetGridY) && !world.isBarrierAt(targetGridX, targetGridY);
+    // Das Zielfeld des Spielers muss begehbar sein.
+    if (world.isWallAt(targetGridX, targetGridY) || world.isBarrierAt(targetGridX, targetGridY) || world.isClosedDoorAt(targetGridX, targetGridY) || world.isCrateAt(targetGridX, targetGridY)) {
+      return false;
+    }
+  
+    // Ohne getragenes Objekt reicht die Prüfung des Spielerfeldes.
+    if (carriedObject == null) {
+      return true;
+    }
+  
+    // Das getragene Objekt bleibt ein Feld vor dem Spieler.
+    int carriedX = targetGridX + facingX;
+    int carriedY = targetGridY + facingY;
+  
+    // Wände und geschlossene Türen blockieren das Objekt.
+    if (world.isWallAt(carriedX, carriedY) || world.isClosedDoorAt(carriedX, carriedY)) {
+      return false;
+    }
+  
+    return true;
   }
   
   // Prüft ob eine Bewegung möglich ist
@@ -42,9 +59,18 @@ class Player extends Sprite {
   
   // Aktualisiert die Bewegungsrichtung anhand der Eingabe des Spielers
   void updateMovementInput(World world) {
+    // Aktuelle Blickrichtung einlesen.
+    updateFacing();
   
     // Eine laufende Bewegung zuerst aktualisieren.
     updateMovement(world);
+    
+    boolean interactPressed = EventListener.keyInteract && !interactWasDown;
+    interactWasDown = EventListener.keyInteract;
+     
+    if(interactPressed){     
+      interact(world);
+    }
   
     // Während der Bewegung keinen neuen Schritt starten.
     if (isMoving()) {
@@ -67,6 +93,7 @@ class Player extends Sprite {
   
     // Aktuelle Richtung einlesen.
     processInput();
+    
   
     // Nur bei einem gültigen Ziel eine neue Bewegung starten.
     if (tryMove(world)) {
@@ -81,18 +108,75 @@ class Player extends Sprite {
   }
   
   // Fügt dem Spieler Schaden zu
-  void takeDamage(int damage){
-    health -= damage;
-    
-    health = max(0, health);
-    
-    println("Spieler-Lebenspunkte: " + health);
+  @Override
+  void takeDamage(int damage) {
+    super.takeDamage(damage);
+    println("Lebenspunkte: " + health);
   }
   
   // Beim Neustart werden die Lebenspunkte zurückgesetzt
   void resetHealth(){
    health = 3; 
   }
+  
+  // Interagieren mit Weltobjekten
+  void interact(World world){
+    int objectX = grid_x + facingX;
+    int objectY = grid_y + facingY;
+    
+    if(carriedObject != null){
+      if (world.canDropObjectAt(objectX, objectY)) {
+        WorldObject objectToDrop = carriedObject;
+        
+        world.moveObject(objectToDrop, objectToDrop.grid_x, objectToDrop.grid_y, objectX, objectY);
+        
+        if (objectToDrop instanceof Sprite) {
+          Sprite sprite = (Sprite)objectToDrop;
+          sprite.carriedBy = null;
+        
+          sprite.targetGridX = objectX;
+          sprite.targetGridY = objectY;
+          sprite.displayGridX = objectX;
+          sprite.displayGridY = objectY;
+          sprite.moveProgress = 1;
+        }
+        
+        carriedObject = null;
+      }
+      return; //Ablegen eines Objektes
+    }
+    
+    
+    WorldObject object = world.getPickupableObjectAt(objectX, objectY);
+    
+    carriedObject = object;
+    
+    if(carriedObject instanceof Sprite){
+      ((Sprite)carriedObject).carriedBy = this;
+    }
+    
+    if(object != null){
+     carriedObject = object; // Aufheben eines Objektes
+    }
+  }
+  
+  // Aktualisiert die Blickrichtung des Spielers
+  void updateFacing(){
+    if (EventListener.keyFaceUp) {
+      facingX = 0;
+      facingY = -1;
+    } else if (EventListener.keyFaceDown) {
+      facingX = 0;
+      facingY = 1;
+    } else if (EventListener.keyFaceLeft) {
+      facingX = -1;
+      facingY = 0;
+    } else if (EventListener.keyFaceRight) {
+      facingX = 1;
+      facingY = 0;
+    }    
+  }
+  
   // Überschreibt die moveCompleted Methode, wenn eine Richtungstaste gehalten wird
   @Override void moveCompleted() {
     repeatStartTime = millis();

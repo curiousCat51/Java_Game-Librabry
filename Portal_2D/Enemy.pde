@@ -4,7 +4,6 @@ class Enemy extends Sprite{
   
   Barrier barrier;
   
-  int health;
   
   int attackInterval;
   int attackTimer;
@@ -84,15 +83,13 @@ class Enemy extends Sprite{
   }
   
   // Fügt dem Gegner Schaden zu
-  void takeDamage(int damage){
-   health -= damage;
-   
-   health = max(0, health);
-   
-   println("Gegner-Lebenspunkte: " + health);
+  @Override
+  void takeDamage(int damage) {
+    super.takeDamage(damage);
+    println("Lebenspunkte: " + health);
   }
   
-  // Prüft ob sich bsw der Spieler im Angriffsradius befindet
+  // Prüft ob sich der Spieler im Angriffsradius befindet
   boolean isInAttackRange(WorldObject target){
     if(target == null){
      return false; 

@@ -1,15 +1,23 @@
 import java.util.*;
 
 // TODO:
+// 30.10.2026
 // - Letzter Gegnertyp <- fertig
 // - Teleportationslogik für Gegner <- fertig
 // - verschiedene Wandtypen <- fertig
-// - Türen und Buttons <- dran
-// - Neuer Level Loader <- dran
+// - Neuer Level Loader <- fertig
+// - Türen und Buttons <- fertig
+// 02.11.2026
+// - Schliessende Tür verschiebt Spieler <- Fertig
+// - Spieler kann Objekte heben <- fertig
+// - Erweiterte Steuerung <- fertig
+// - Kisten <- fertig
+// - Lebensanzeige <- fertig
+// 04.11.2026
+// - Steuerungsanzeige
 // - Neustart anpassen
-// - Bilder einbinden
 // - Kamera
-// - (Boxen)
+// - Bilder einbinden
 
 World world;
 Player player;
@@ -30,7 +38,8 @@ void setup(){
  EventListener = new KeyHandler();
  
     LevelLoader loader = new LevelLoader();
-    world = loader.loadLevel("data/map/level_test.csv", EventListener);
+    // world = loader.loadLevel("data/map/level_test.csv", EventListener);
+    world = loader.loadLevel("data/map/observation_cells.csv", EventListener);
     
     if (world == null) {
       println("Level konnte nicht geladen werden.");
@@ -55,10 +64,6 @@ void setup(){
     } else {
       println("Fehler: Kein Player gefunden.");
     }
-    
-    world = loader.loadLevel("data/map/observation_cells.csv", EventListener);
-  
-  //loadLevel("data/map/observation_cells.csv");
 }
 
 
@@ -84,6 +89,8 @@ void draw() {
   
   updateEnemyTeleportation();
   
+  updateCrateTeleportation();
+  
   ArrayList<Enemy> defeatedEnemies = new ArrayList<Enemy>();
   
   for (WorldObject object : world.world_objects) {
@@ -95,7 +102,7 @@ void draw() {
       // Bestehender Angriff: LINE_SHOOTER
       if (enemy.enemyType == EnemyType.LINE_SHOOTER && enemy.isAttackReady()) {
   
-        Projectile projectile = new Projectile(enemy.grid_x, enemy.grid_y, enemy.shootDirectionX, enemy.shootDirectionY);
+        Projectile projectile = new Projectile(enemy.getCurrentGridX(), enemy.getCurrentGridY(), enemy.shootDirectionX, enemy.shootDirectionY);
   
         world.addProjectile(projectile);
         enemy.resetAttackTimer();
@@ -170,8 +177,8 @@ void draw() {
  
   // Ausgewähltes Portal platzieren
  if(EventListener.portal_mode && EventListener.placePortalRequested && EventListener.selectedPortalType != null && target != null && world != null){
-   // Es darf kein Portal platziert werden, wenn das Target sich innerhalb einer Barriere befindet
-   if(!world.isBarrierAt(target.grid_x, target.grid_y)){
+   // Es darf kein Portal platziert werden, wenn das Target sich innerhalb einer Barriere oder auf einer Tür befindet
+   if(!world.isBarrierAt(target.grid_x, target.grid_y) && !world.isDoorAt(target.grid_x, target.grid_y)){
      world.placePortal(EventListener.selectedPortalType, target.grid_x, target.grid_y);
      
      EventListener.placePortalRequested = false;
@@ -206,8 +213,7 @@ void draw() {
     projectile.draw(tile_size);
   
     // Prüfen, ob der Spieler getroffen wurde
-    boolean hitPlayer = player != null
-        && projectile.hasHitPlayer(player);
+    boolean hitPlayer = player != null && projectile.hasHitPlayer(player);
     
     if (hitPlayer) {
       player.takeDamage(1);
@@ -243,103 +249,12 @@ void draw() {
     }
     
     // Projektil entfernen, wenn es eine Grenze, eine Wand, den Spieler oder einen Gegner trifft
-    if (projectile.isOutsideWorld(world) || projectile.hasHitWall(world) || hitPlayer || hitAnEnemy) {
+    if (projectile.isOutsideWorld(world) || projectile.hasHitWall(world) || hitPlayer || hitAnEnemy || projectile.hasHitCrate(world, player)) {
       world.projectiles.remove(i);
     }
   }
   
   renderer.drawGrid(world, tile_size);
-}
-
-
-// Lädt die gewünschte Karte als Welt
-void loadLevel(String filename) {
-  String[] lines = loadStrings(filename);
-
-  if (lines == null || lines.length == 0) {
-    println("Fehler: Level-Datei konnte nicht geladen werden.");
-    return;
-  }
-
-  int rows = lines.length;
-  int cols = split(lines[0], ',').length;
-
-  // 1. Welt erstellen, bevor Objekte registriert werden
-  world = new World(cols, rows);
-
-  // 2. CSV auslesen und Objekte erzeugen
-  for (int row = 0; row < rows; row++) {
-    String[] values = split(lines[row], ',');
-
-    for (int col = 0; col < cols; col++) {
-      int objectType = int(trim(values[col]));
-
-      switch (objectType) {
-        case 0:
-          // Leere Zelle: kein Objekt erzeugen
-          break;
-
-        case 1:
-          // x = col, y = row
-          player = new Player(col, row, EventListener);
-
-          world.registerObject(player, col, row);
-          
-          target = new Target(player.grid_x, player.grid_y, EventListener);
-
-          world.registerObject(target, target.grid_x, target.grid_y);
-          break;
-          
-        case 2:
-          
-          Wall wall = new Wall(col, row, WallType.GERADE, Orientation.SENKRECHT);
-          
-          world.registerObject(wall, col, row);
-          break;
-          
-        case 3:
-        
-          Portal portal_a = new Portal(WorldTypes.PORTAL_A, col, row);
-          
-          world.registerObject(portal_a, col, row);
-          break;
-          
-        case 4:
-        
-          Portal portal_b = new Portal(WorldTypes.PORTAL_B, col, row);
-          
-          world.registerObject(portal_b, col, row);
-          break;
-
-        default:
-          println("Unbekannter Objekttyp: " + objectType);
-          break;
-      }
-    }
-  }
-  
-   //Testgegner erzeugen und regristrieren
-   Enemy enemy1 = new Enemy(EnemyType.LINE_SHOOTER, 0, 2, 1, 0);
-  
-   world.registerObject(enemy1, enemy1.grid_x, enemy1.grid_y);
-  
-   Enemy enemy2 = new Enemy(EnemyType.AREA_ATTACKER, 3, 5, 0, 1);
-  
-   world.registerObject(enemy2, enemy2.grid_x, enemy2.grid_y);
-  
-  Enemy enemy3 = new Enemy(EnemyType.BARRIER_CREATOR, 3, 1, 0, 1);
-  
-  enemy3.setMovementDirection(0, 1);
-  
-  world.registerObject(enemy3, enemy3.grid_x, enemy3.grid_y);
-
-  // 3. Aktuellen Zustand kontrollieren
-  println("Level geladen: " + rows + " Zeilen, " + cols + " Spalten.");
-  println("Registrierte Objekte: " + world.world_objects.size());
-
-  for (WorldObject object : world.world_objects) {
-    println("Typ: " + object.type + " | Grid X: " + object.grid_x + " | Grid Y: " + object.grid_y);
-  }
 }
 
 // Prüft, ob sich ein Gegner auf einem Portal befindet.
@@ -355,6 +270,22 @@ void updateEnemyTeleportation(){
     Enemy enemy = (Enemy) object;
     
     world.tryTeleport(enemy);
+  }
+}
+
+// Prüft, ob sich eine Kiste auf einem Portal befindet.
+void updateCrateTeleportation(){
+ 
+  for(WorldObject object : world.world_objects){
+   
+    if(!(object instanceof Crate)){
+     
+      continue; 
+    }
+    
+    Crate crate = (Crate) object;
+    
+    world.tryTeleport(crate);
   }
 }
 

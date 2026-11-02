@@ -33,6 +33,15 @@ class World {
    return x >= 0 && x < cols && y >= 0 && y < rows; 
   }
   
+  // Überprüft, ob sich an einer Stelle eine Kiste befindet
+  boolean isCrateAt(int x, int y){
+    if(!isInsideGrid(x, y)){
+      return false;
+    }
+    
+    return grid[y][x].containsCrate();
+  }
+  
   // Befindet sich an einer Position eine Wand
   boolean isWallAt(int x, int y){
    if(!isInsideGrid(x, y)){
@@ -40,6 +49,28 @@ class World {
    }
    
    return grid[y][x].containsWall();
+  }
+  
+  // Überprüft, ob sich eine geschlossene Tür an einer Stelle befindet
+  boolean isClosedDoorAt(int x, int y){
+    if(!isInsideGrid(x, y)){
+      return true; 
+    }
+    
+    if(!isDoorAt(x, y)){
+      return false;
+    }
+    
+    return grid[y][x].isDoorClosed();
+  }
+  
+  // Überprüft, ob sich eine Tür an einer Stelle befindet
+  boolean isDoorAt(int x, int y){
+    if(!isInsideGrid(x, y)){
+      return true;
+    }
+    
+    return grid[y][x].containsDoor();
   }
   
   // Prüft ob sich an einer Position eine Barriere befindet.
@@ -156,7 +187,7 @@ class World {
    return true;
   }
 
-  // Fügt ein Objekt der hinzu Liste
+  // Fügt ein Objekt der Liste hinzu
   void registerObject(WorldObject object, int col, int row) {
     grid[row][col].addObject(object);
     world_objects.add(object);
@@ -221,8 +252,7 @@ class World {
     WorldObject portalHere = null;
   
     for (WorldObject object : grid[y][x].objects) {
-      if (object.type == WorldTypes.PORTAL_A
-          || object.type == WorldTypes.PORTAL_B) {
+      if (object.type == WorldTypes.PORTAL_A || object.type == WorldTypes.PORTAL_B) {
         portalHere = object;
         break;
       }
@@ -241,10 +271,7 @@ class World {
       return false;
     }
   
-    WorldTypes destinationType =
-        portalHere.type == WorldTypes.PORTAL_A
-        ? WorldTypes.PORTAL_B
-        : WorldTypes.PORTAL_A;
+    WorldTypes destinationType = portalHere.type == WorldTypes.PORTAL_A ? WorldTypes.PORTAL_B : WorldTypes.PORTAL_A;
   
     WorldObject destinationPortal = null;
   
@@ -351,30 +378,138 @@ class World {
   
   void updateButtons() {
     
-      for (WorldObject object : world_objects) {
+    for (WorldObject object : world_objects) {
     
-        if (!(object instanceof Button)) {
+      if (!(object instanceof Button)) {
+        continue;
+      }
+    
+      Button button = (Button) object;
+      boolean occupied = false;
+  
+      for (WorldObject other : world_objects) {
+  
+        if (other == button || !other.canActivateButton()) {
           continue;
         }
-    
-        Button button = (Button) object;
-        boolean occupied = false;
-    
-        for (WorldObject other : world_objects) {
-    
-          if (other == button || !other.canActivateButton()) {
-            continue;
-          }
-    
-          if (other.grid_x == button.grid_x &&
-              other.grid_y == button.grid_y) {
-            occupied = true;
-            break;
-          }
+  
+        if (other.grid_x == button.grid_x &&
+            other.grid_y == button.grid_y) {
+          occupied = true;
+          break;
         }
+      }
     
-        button.active = occupied;
-        button.linkedDoor.open = occupied;
+      button.active = occupied;
+
+      if (occupied) {
+        button.linkedDoor.open = true;
+      } else if (button.linkedDoor.open) {
+        // Erst schließen, wenn der Spieler sicher von der Tür weg ist.
+        if (pushPlayerOffDoor(button.linkedDoor)) {
+          button.linkedDoor.open = false;
+        }
       }
     }
+  }
+  
+  // Verschiebt den Spieler, wenn eine Tür sich schließt
+  boolean pushPlayerOffDoor(Door door) {
+    Player player = null;
+  
+    for (WorldObject object : world_objects) {
+      if (object instanceof Player) {
+        Player candidate = (Player) object;
+  
+        if (candidate.grid_x == door.grid_x &&
+            candidate.grid_y == door.grid_y) {
+          player = candidate;
+          break;
+        }
+      }
+    }
+  
+    // Kein Spieler auf dieser Tür.
+    if (player == null) {
+      return true;
+    }
+  
+    // Vier Nachbarfelder der Reihe nach prüfen.
+    int[][] directions = {
+      { 0, -1 }, // oben
+      { 0,  1 }, // unten
+      { -1, 0 }, // links
+      { 1,  0 }  // rechts
+    };
+  
+    for (int[] direction : directions) {
+      int newX = door.grid_x + direction[0];
+      int newY = door.grid_y + direction[1];
+  
+      if (!isInsideGrid(newX, newY) ||
+          isWallAt(newX, newY) ||
+          isBarrierAt(newX, newY) ||
+          isClosedDoorAt(newX, newY) ||
+          isDoorAt(newX, newY)) {
+        continue;
+      }
+  
+      // Sofort umsetzen und eine eventuell laufende Animation abbrechen.
+      moveObject(player, player.grid_x, player.grid_y, newX, newY);
+  
+      player.targetGridX = newX;
+      player.targetGridY = newY;
+      player.displayGridX = newX;
+      player.displayGridY = newY;
+      player.moveProgress = 1.0f;
+  
+      return true;
+    }
+  
+    // Kein freies Nachbarfeld gefunden: Tür offen lassen.
+    return false;
+  }
+  
+  // Sucht ein Objekt an einer bestimmten Position, welches aufhebbar ist
+  WorldObject getPickupableObjectAt(int gridX, int gridY) {
+    if(!isInsideGrid(gridX, gridY)){
+       return null; 
+    }
+  
+    GridCell cell = grid[gridY][gridX];
+  
+    for (WorldObject object : cell.objects) {
+      if (object instanceof Enemy) {
+        return object;
+      }
+      
+      if(object instanceof Crate){
+       return object; 
+      }
+    }
+  
+    return null;
+  }
+  
+  // Prüft, ob ein Objekt an einer Position abgelegt werden kann
+  boolean canDropObjectAt(int gridX, int gridY){
+    if(!isInsideGrid(gridX, gridY)){
+     
+      return false;
+    }
+    
+    for(WorldObject object : grid[gridY][gridX].objects){
+     
+      if(object instanceof Wall){
+       return false; 
+      }
+      
+      if(object instanceof Door && !((Door)object).open){
+       
+        return false;
+      }
+    }
+    
+    return true;
+  }
 }

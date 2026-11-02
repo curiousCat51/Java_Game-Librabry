@@ -42,6 +42,26 @@ class Projectile{
     return x < 0 || y < 0 || x >= world.cols || y >= world.rows;
   }
   
+  // Prüft, ob das Projectile eine Kiste getroffen hat
+  boolean hasHitCrate(World world, Player player) {
+    int gridX = floor(x);
+    int gridY = floor(y);
+  
+    // Kiste, die normal im Raster liegt
+    if (world.isCrateAt(gridX, gridY)) {
+      return true;
+    }
+  
+    // Zusätzlich die aktuell getragene Kiste prüfen
+    if (player != null && player.carriedObject instanceof Crate) {
+      Crate crate = (Crate)player.carriedObject;
+  
+      return gridX == crate.getCurrentGridX() && gridY == crate.getCurrentGridY();
+    }
+  
+    return false;
+  }
+  
   // Prüft ob das Projectile eine Wand trifft
   boolean hasHitWall(World world){
    int gridX = floor(x);

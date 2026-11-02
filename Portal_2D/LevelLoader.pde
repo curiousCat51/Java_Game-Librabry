@@ -2,6 +2,8 @@ class LevelLoader{
  
   
   World loadLevel(String filename, KeyHandler eventListener) {
+    
+    println("LevelLoader aufgerufen: " + filename);
   
     String[] lines = loadStrings(filename);
   
@@ -90,7 +92,7 @@ class LevelLoader{
       String objectType = trim(values[0]).toUpperCase();
       
       // Prüft, ob der objectType bekannt ist oder nicht
-      if (!objectType.equals("PLAYER") && !objectType.equals("WALL") && !objectType.equals("ENEMY") && !objectType.equals("DOOR") && !objectType.equals("BUTTON")) {
+      if (!objectType.equals("PLAYER") && !objectType.equals("WALL") && !objectType.equals("ENEMY") && !objectType.equals("DOOR") && !objectType.equals("BUTTON") && !objectType.equals("CRATE")) {
 
         println("Fehler: Unbekannter Objekttyp: " + objectType);
         return null;
@@ -206,6 +208,11 @@ class LevelLoader{
         newWorld.registerObject(button, gridX, gridY);
       }
       
+      if(objectType.equals("CRATE")){
+        Crate crate = new Crate(gridX, gridY);
+        newWorld.registerObject(crate, gridX, gridY);
+      }
+      
       // Optionale Enum-Werte überprüfen
       if (!isValidDirection(moveDirection) || !isValidDirection(shootDirection) || !isValidOrientation(orientation)) {
   
@@ -226,6 +233,8 @@ class LevelLoader{
     if (!newWorld.linkDoorsAndButtons()) {
       return null;
     }
+    
+    println("LevelLoader erfolgreich abgeschlossen.");
   
     return newWorld;
   }

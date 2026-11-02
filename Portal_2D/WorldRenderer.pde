@@ -118,8 +118,24 @@ class WorldRenderer {
     rectMode(CORNER);
     ellipseMode(CENTER);
     
+    Player player = null;
+    
+    for(WorldObject object : world.world_objects){
+     
+      if(object instanceof Player){
+       
+        player = (Player) object;
+        break;
+      }
+    }
+    
     for (WorldObject object : world.world_objects) {
       if (object == null) {
+        continue;
+      }
+      
+      if(player != null && object == player.carriedObject){
+       
         continue;
       }
       
@@ -128,6 +144,8 @@ class WorldRenderer {
       
       if (object instanceof Sprite) {
         Sprite sprite = (Sprite) object;
+        
+        drawHealthBar((Sprite) object, tileSize);
       
         renderGridX = sprite.displayGridX;
         renderGridY = sprite.displayGridY;
@@ -257,7 +275,64 @@ class WorldRenderer {
         }
         
         break;
+        
+        case CRATE:{
+          
+          rectMode(CENTER);
+         
+          float pixelX = (renderGridX + 0.5f) * tileSize;
+          float pixelY = (renderGridY + 0.5f) * tileSize;
+          
+          fill(76, 47, 38);
+          rect(pixelX, pixelY, tileSize * 0.5f, tileSize * 0.5f);
+          
+          stroke(0);
+          strokeWeight(3);
+          rect(pixelX, pixelY, tileSize * 0.5f, tileSize * 0.5f);
+          line(pixelX - tileSize * 0.2f, pixelY + tileSize * 0.2f, pixelX + tileSize * 0.2f, pixelY - tileSize * 0.2f);
+          line(pixelX - tileSize * 0.2f, pixelY - tileSize * 0.2f, pixelX + tileSize * 0.2f, pixelY + tileSize * 0.2f);
+          noStroke();
+          rectMode(CORNER);
+          strokeWeight(3);
+        }
       }
+    }
+    
+        // Getragenes Objekt kleiner vor dem Spieler zeichnen
+    if (player != null && player.carriedObject instanceof Enemy) {
+      float renderGridX = player.displayGridX + player.facingX;
+      float renderGridY = player.displayGridY + player.facingY;
+
+      float pixelX = (renderGridX + 0.5f) * tileSize;
+      float pixelY = (renderGridY + 0.5f) * tileSize;
+      float carriedSize = tileSize * 0.45f;
+
+      fill(220, 50, 50);
+      noStroke();
+      ellipse(pixelX, pixelY, carriedSize, carriedSize);
+    }
+    else if(player != null && player.carriedObject instanceof Crate){
+      
+      float renderGridX = player.displayGridX + player.facingX;
+      float renderGridY = player.displayGridY + player.facingY;
+      
+      rectMode(CENTER);
+         
+      float pixelX = (renderGridX + 0.5f) * tileSize;
+      float pixelY = (renderGridY + 0.5f) * tileSize;
+      float carriedSize = tileSize * 0.45f;
+      
+      fill(76, 47, 38);
+      rect(pixelX, pixelY, carriedSize * 0.5f, carriedSize * 0.5f);
+      
+      stroke(0);
+      strokeWeight(3);
+      rect(pixelX, pixelY, carriedSize * 0.5f, carriedSize * 0.5f);
+      line(pixelX - carriedSize * 0.2f, pixelY + carriedSize * 0.2f, pixelX + carriedSize * 0.2f, pixelY - carriedSize * 0.2f);
+      line(pixelX - carriedSize * 0.2f, pixelY - carriedSize * 0.2f, pixelX + carriedSize * 0.2f, pixelY + carriedSize * 0.2f);
+      noStroke();
+      rectMode(CORNER);
+      strokeWeight(3);
     }
   }
   
@@ -294,5 +369,30 @@ class WorldRenderer {
         
       }
     }
+  }
+  
+  // Zeichnet die Lebensanzeigen von Spieler und Gegner
+  void drawHealthBar(Sprite sprite, int tileSize) {
+    if (!sprite.isHealthBarVisible()) {
+      return;
+    }
+  
+    float barWidth = tileSize * 0.8f;
+    float barHeight = 5;
+  
+    float x = (sprite.getCurrentGridX() + 0.1f) * tileSize;
+    float y = (sprite.getCurrentGridY() - 0.2f) * tileSize;
+  
+    float healthPercent = sprite.getHealthPercent();
+  
+    // Hintergrund der Leiste
+    noStroke();
+    fill(80);
+    rect(x, y, barWidth, barHeight);
+  
+    // Lebenspunkte: Grün bei voller Gesundheit, Rot bei 0
+    color healthColor = lerpColor(color(0, 255, 0), color(255, 0, 0), 1 - healthPercent);
+    fill(healthColor);
+    rect(x, y, barWidth * healthPercent, barHeight);
   }
 }

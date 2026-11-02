@@ -43,6 +43,11 @@ class Target extends Sprite{
      return false;
    }
    
+   // Geschlossene Türen dürfen nicht betreten werden
+   if(world.isClosedDoorAt(newX, newY)){
+     return false;
+   }
+   
    // Maximale Manhatten-Distanz zum Spieler: 4 Felder
    int distanceX = abs(newX - player.grid_x);
    int distanceY = abs(newY - player.grid_y);
@@ -163,6 +168,10 @@ class Target extends Sprite{
      
      if(world.isWallAt(newCol, newRow)){
        continue;
+     }
+     
+     if(world.isClosedDoorAt(newCol, newRow)){
+      continue; 
      }
      
      if(distance[newRow][newCol] != -1){
