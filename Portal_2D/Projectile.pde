@@ -62,6 +62,21 @@ class Projectile{
     return false;
   }
   
+  // Prüft, ob das Projectile einen getragenen Gegner trifft
+  boolean hasHitCarriedEnemy(Player player){
+    int gridX = floor(x);
+    int gridY = floor(y);
+    
+    // Zusätzlich den aktuelle getragenen Gegner prüfen
+    if(player != null && player.carriedObject instanceof Enemy){
+     Enemy enemy = (Enemy)player.carriedObject;
+     
+     return gridX == enemy.getCurrentGridX() && gridY == enemy.getCurrentGridY();
+    }
+    
+    return false;
+  }
+  
   // Prüft ob das Projectile eine Wand trifft
   boolean hasHitWall(World world){
    int gridX = floor(x);
@@ -84,7 +99,7 @@ class Projectile{
      return false; 
     }
     
-    return floor(x) == enemy.grid_x && floor(y) == enemy.grid_y;
+    return floor(x) == enemy.getCurrentGridX() && floor(y) == enemy.getCurrentGridY();
   }
   
   // Zeichnet das Projectile

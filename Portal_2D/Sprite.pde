@@ -20,8 +20,8 @@ class Sprite extends WorldObject {
   int facingX = 0;
   int facingY = 1;
   
-  int maxHealth = 10;
-  int health = 10;
+  int maxHealth = 100;
+  int health = 100;
   
   int healthBarDuration = 2000;
   int healthBarShownUntil = 0;
@@ -125,7 +125,7 @@ class Sprite extends WorldObject {
   
   // Verursacht Schaden
   void takeDamage(int damage) {
-    health = max(0, health - damage);
+    health = max(0, this.health - damage);
     healthBarShownUntil = millis() + healthBarDuration;
   }
   

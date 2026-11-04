@@ -3,6 +3,7 @@ class WorldObject{
   int grid_x;
   int grid_y;
   WorldTypes type;
+  boolean gettingCarried = false;
   
   WorldObject(WorldTypes type, int grid_x, int grid_y){
     this.type = type;

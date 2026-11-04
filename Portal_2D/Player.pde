@@ -6,10 +6,18 @@ class Player extends Sprite {
   int repeatStartTime = 0;
   int repeatDelay = 120;
   
+  // Zeit bevor Trefferpunkte wieder hergestelt werden
+  int damageStartTime = 0;
+  int damageHealDelay = 500;
+  boolean resetRecover = false;
+  
+  // Zeit für das wiederherstellen von Trefferpunkten
+  int healStartTime = 0;
+  int healDelay = 2;
 
   Player(int grid_x, int grid_y, KeyHandler EventListener) {
     super(WorldTypes.PLAYER, grid_x, grid_y);
-
+    // this.health = 1;
     this.EventListener = EventListener;
   }
   
@@ -116,7 +124,7 @@ class Player extends Sprite {
   
   // Beim Neustart werden die Lebenspunkte zurückgesetzt
   void resetHealth(){
-   health = 3; 
+   health = maxHealth; 
   }
   
   // Interagieren mit Weltobjekten
@@ -133,6 +141,7 @@ class Player extends Sprite {
         if (objectToDrop instanceof Sprite) {
           Sprite sprite = (Sprite)objectToDrop;
           sprite.carriedBy = null;
+          sprite.gettingCarried = false;
         
           sprite.targetGridX = objectX;
           sprite.targetGridY = objectY;
@@ -153,6 +162,7 @@ class Player extends Sprite {
     
     if(carriedObject instanceof Sprite){
       ((Sprite)carriedObject).carriedBy = this;
+      ((Sprite)carriedObject).gettingCarried = true;
     }
     
     if(object != null){
@@ -175,6 +185,39 @@ class Player extends Sprite {
       facingX = 1;
       facingY = 0;
     }    
+  }
+  
+  // Prüft, wann der Spieler zuletzt Schaden erhalten hat und setzt den Timer zurück, wenn der Spieler erneut getroffen wurde
+  void startHealing(){    
+    
+    // Prüft, ob erneut ein Treffer gelandet wurde
+    if(resetRecover){
+      damageStartTime = 0;
+      healStartTime = 0;
+      resetRecover = false;
+      return;
+    }
+    
+    // Prüfen, ob seit dem letzten Treffer genug Zeit vergangen ist
+    if(damageStartTime < damageHealDelay){
+      damageStartTime++;
+      return;
+    }
+    
+    // Lässt den Spieler Trefferpunkte wiederherstellen
+    recoverHP();
+    healthBarShownUntil = millis() + healthBarDuration;
+  }
+  
+  // Stellt Trefferpunkte wieder her
+  void recoverHP(){
+    if(healStartTime < 1 / healDelay){
+     healStartTime++;
+     return;
+    }
+    
+    this.health += 2;
+    healStartTime = 0;
   }
   
   // Überschreibt die moveCompleted Methode, wenn eine Richtungstaste gehalten wird

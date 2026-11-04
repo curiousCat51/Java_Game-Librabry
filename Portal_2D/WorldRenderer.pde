@@ -4,7 +4,7 @@ class WorldRenderer {
     
   }
   
-  // Zeichnet das Grid
+  // Zeichnet das Grid und die Objekte aus den einzelnen Zellen
   void drawGrid(World world, int tileSize) {
     stroke(160);
     noFill();
@@ -134,8 +134,11 @@ class WorldRenderer {
         continue;
       }
       
-      if(player != null && object == player.carriedObject){
-       
+      if (object instanceof Sprite) {
+        drawHealthBar((Sprite) object, tileSize);
+      }
+      
+      if (player != null && object == player.carriedObject) {
         continue;
       }
       
@@ -144,8 +147,6 @@ class WorldRenderer {
       
       if (object instanceof Sprite) {
         Sprite sprite = (Sprite) object;
-        
-        drawHealthBar((Sprite) object, tileSize);
       
         renderGridX = sprite.displayGridX;
         renderGridY = sprite.displayGridY;
@@ -336,6 +337,7 @@ class WorldRenderer {
     }
   }
   
+  // Zeichnet die erreichbaren Felder für das Target
   void drawRangeCells(Target target, Player player, World world, int tile_size){
     boolean[][] inRange = target.getCellsInRange(player, world);
     boolean[][] reachable = target.getReachableCells(player, world);
@@ -394,5 +396,68 @@ class WorldRenderer {
     color healthColor = lerpColor(color(0, 255, 0), color(255, 0, 0), 1 - healthPercent);
     fill(healthColor);
     rect(x, y, barWidth * healthPercent, barHeight);
+  }
+  
+  // Stellt die Tastenbelegung dar
+  void drawControls(KeyHandler keys, Player player) {
+    ArrayList<String> controls = new ArrayList<String>();
+  
+    // Bewegung ist im Portal-Modus gesperrt.
+    if (!keys.portal_mode && player != null) {
+      controls.add("Pfeiltasten: Bewegen");
+      controls.add("W A S D: Blickrichtung");
+      controls.add("E: Aufheben / Ablegen");
+    }
+  
+    controls.add("T: Portal-Modus");
+  
+    if (keys.portal_mode) {
+      controls.add("1 / 2: Portal wählen");
+  
+      if (keys.selectedPortalType != null) {
+        controls.add("Enter: Platzieren");
+      }
+  
+      controls.add("Esc: Abbrechen");
+    }
+  
+    float padding = 10;
+    float lineHeight = 18;
+    float maxTextWidth = width - padding * 2;
+  
+    textSize(12);
+    textAlign(LEFT, CENTER);
+  
+    // Hinweise in Zeilen umbrechen, sobald die Fensterbreite nicht reicht.
+    ArrayList<String> lines = new ArrayList<String>();
+    String line = "";
+  
+    for (String control : controls) {
+      String candidate = line.length() == 0 ? control : line + "   |   " + control;
+  
+      if (textWidth(candidate) <= maxTextWidth) {
+        line = candidate;
+      } else {
+        if (line.length() > 0) {
+          lines.add(line);
+        }
+        line = control;
+      }
+    }
+  
+    if (line.length() > 0) {
+      lines.add(line);
+    }
+  
+    float barHeight = padding * 2 + lines.size() * lineHeight;
+  
+    noStroke();
+    fill(30, 220);
+    rect(0, height - barHeight, width, barHeight);
+  
+    fill(255);
+    for (int i = 0; i < lines.size(); i++) {
+      text(lines.get(i), padding, height - barHeight + padding + lineHeight * (i + 0.5f));
+    }
   }
 }

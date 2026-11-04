@@ -5,6 +5,10 @@ class Crate extends Sprite{
   }
   
   @Override boolean canActivateButton(){
+    
+    if(gettingCarried){
+     return false; 
+    }
     return true; 
   }
 }

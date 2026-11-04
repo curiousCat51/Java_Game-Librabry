@@ -24,7 +24,7 @@ class World {
   // Fügt ein Projectile hinzu
   void addProjectile(Projectile projectile){
     if(projectile != null){
-     projectiles.add(projectile); 
+     projectiles.add(projectile);
     }
   }
   
@@ -71,6 +71,15 @@ class World {
     }
     
     return grid[y][x].containsDoor();
+  }
+  
+  // Überprüft, ob sich ein Gegner an einer Stelle befindet
+  boolean isEnemyAt(int x, int y){
+    if(!isInsideGrid(x, y)){
+     return true; 
+    }
+    
+    return grid[y][x].containsEnemy();
   }
   
   // Prüft ob sich an einer Position eine Barriere befindet.
@@ -393,8 +402,7 @@ class World {
           continue;
         }
   
-        if (other.grid_x == button.grid_x &&
-            other.grid_y == button.grid_y) {
+        if (other.grid_x == button.grid_x && other.grid_y == button.grid_y) {
           occupied = true;
           break;
         }
@@ -480,10 +488,12 @@ class World {
   
     for (WorldObject object : cell.objects) {
       if (object instanceof Enemy) {
+        object.gettingCarried = true;
         return object;
       }
       
       if(object instanceof Crate){
+        object.gettingCarried = true;
        return object; 
       }
     }

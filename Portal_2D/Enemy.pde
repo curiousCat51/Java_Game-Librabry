@@ -24,7 +24,7 @@ class Enemy extends Sprite{
   super(WorldTypes.ENEMY, grid_x, grid_y);
 
   this.enemyType = enemyType;
-  this.health = 3;
+  this.health = maxHealth;
   this.attackInterval = 60;
   this.attackTimer = 0;
   this.shootDirectionX = shootDirectionX;
@@ -83,8 +83,7 @@ class Enemy extends Sprite{
   }
   
   // Fügt dem Gegner Schaden zu
-  @Override
-  void takeDamage(int damage) {
+  @Override void takeDamage(int damage) {
     super.takeDamage(damage);
     println("Lebenspunkte: " + health);
   }
@@ -111,6 +110,10 @@ class Enemy extends Sprite{
   }
   
   @Override boolean canActivateButton(){
+    if(gettingCarried){
+      return false;
+    }
+    
     return true; 
   }
 }

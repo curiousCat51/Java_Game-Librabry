@@ -53,9 +53,24 @@ class GridCell{
  boolean containsCrate(){
    for(WorldObject object : objects){
     if(object.type == WorldTypes.CRATE){
+      Crate crate = (Crate)object;
+      
+      if(crate.gettingCarried){
+        return false;
+      }
      return true; 
     }
    }
    return false;
+ }
+ 
+ // Überprüft, ob sich in einer bestimmten GridZelle ein Gegner befindet
+ boolean containsEnemy(){
+  for(WorldObject object : objects){
+   if(object.type == WorldTypes.ENEMY){
+    return true; 
+   }
+  }
+  return false;
  }
 }

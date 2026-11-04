@@ -69,6 +69,7 @@ class Target extends Sprite{
   void updateMovementInput(Player player, World world){
     // Nur im Portal-Modus darf das Target gesteuert werden.
     if(!EventListener.portal_mode){
+      resetToPlayer(player);
       return;
     }
     

@@ -14,10 +14,15 @@ import java.util.*;
 // - Kisten <- fertig
 // - Lebensanzeige <- fertig
 // 04.11.2026
-// - Steuerungsanzeige
-// - Neustart anpassen
-// - Kamera
+// - QOL Änderungen <- fürs erste fertig
+// - Steuerungsanzeige <- fertig
+// - Neustart anpassen <- fertig
+// - Kamera <- fertig
+// 05.11.2026
+// Gitter einfügen
 // - Bilder einbinden
+// - Maps erstellen
+// - Code aufräumen
 
 World world;
 Player player;
@@ -27,6 +32,9 @@ KeyHandler EventListener;
 
 int tile_size = 32;
 int target_distance = 4;
+
+float cameraX = 0;
+float cameraY = 0;
 
 boolean gameOver = false;
 
@@ -39,6 +47,10 @@ void setup(){
  
     LevelLoader loader = new LevelLoader();
     // world = loader.loadLevel("data/map/level_test.csv", EventListener);
+    // world = loader.loadLevel("data/map/bewegung.csv", EventListener);
+    // world = loader.loadLevel("data/map/gegner.csv", EventListener);
+    // world = loader.loadLevel("data/map/teleportation.csv", EventListener);
+    // world = loader.loadLevel("data/map/tueren_buttons.csv", EventListener);
     world = loader.loadLevel("data/map/observation_cells.csv", EventListener);
     
     if (world == null) {
@@ -66,6 +78,28 @@ void setup(){
     }
 }
 
+void updateCamera() {
+  if (world == null || player == null || target == null) {
+    return;
+  }
+
+  // Im Target-Modus dem Target folgen, sonst dem Spieler.
+  float focusX;
+  float focusY;
+
+  if (EventListener.portal_mode) {
+    focusX = target.grid_x;
+    focusY = target.grid_y;
+  } else {
+    focusX = player.grid_x;
+    focusY = player.grid_y;
+  }
+
+  // Kamera so ausrichten, dass das aktive Objekt in der Mitte liegt.
+  cameraX = width / 2.0f - (focusX + 0.5f) * tile_size;
+  cameraY = height / 2.0f - (focusY + 0.5f) * tile_size;
+}
+
 
 void draw() {
   background(200);
@@ -78,24 +112,52 @@ void draw() {
     return;
   }
   
-  if(gameOver){
+  if (gameOver) {
     background(0);
     fill(255);
     textAlign(CENTER, CENTER);
+  
     textSize(32);
-    text("GAME OVER", width / 2, height / 2);
+    text("GAME OVER", width / 2, height / 2 - 20);
+  
+    textSize(18);
+    text("R: Neustart", width / 2, height / 2 + 20);
+  
     return;
   }
+  
+  updateCamera();
+
+  int viewSize = (target_distance * 2 + 1) * tile_size;
+  int viewLeft = (width - viewSize) / 2;
+  int viewTop = (height - viewSize) / 2;
+  
+  // Sichtfenster fest auf die Bildschirmmitte setzen
+  clip(viewLeft, viewTop, viewSize, viewSize);
+  
+  pushMatrix();
+  translate(cameraX, cameraY);
   
   updateEnemyTeleportation();
   
   updateCrateTeleportation();
+  
+  if(!(player.health >= player.maxHealth)){
+    player.startHealing();
+  }
+  else if(player.health > player.maxHealth){
+   player.health = player.maxHealth; 
+  }
   
   ArrayList<Enemy> defeatedEnemies = new ArrayList<Enemy>();
   
   for (WorldObject object : world.world_objects) {
     if (object instanceof Enemy) {
       Enemy enemy = (Enemy) object;
+      
+      if(enemy.carriedBy != null){
+       continue; 
+      }
       enemy.updateAttackTimer();
       enemy.updateAttackEffect();
   
@@ -217,6 +279,8 @@ void draw() {
     
     if (hitPlayer) {
       player.takeDamage(1);
+      
+      player.resetRecover = true;
     
       if (player.health <= 0) {
         gameOver = true;
@@ -226,13 +290,21 @@ void draw() {
     // Prüfen, ob ein Gegner getroffen wurde
     Enemy hitEnemy = null;
     
-    for (WorldObject object : world.world_objects) {
-      if (object instanceof Enemy) {
-        Enemy enemy = (Enemy) object;
+    // Zuerst die aktuelle Position des getragenen Gegners prüfen.
+    if (projectile.hasHitCarriedEnemy(player)) {
+      hitEnemy = (Enemy) player.carriedObject;
+    }
     
-        if (projectile.hasHitEnemy(enemy)) {
-          hitEnemy = enemy;
-          break;
+    // Nur wenn kein getragener Gegner getroffen wurde, normale Gegner anhand ihrer Rasterposition prüfen.
+    if (hitEnemy == null) {
+      for (WorldObject object : world.world_objects) {
+        if (object instanceof Enemy) {
+          Enemy enemy = (Enemy) object;
+    
+          if (projectile.hasHitEnemy(enemy)) {
+            hitEnemy = enemy;
+            break;
+          }
         }
       }
     }
@@ -249,12 +321,17 @@ void draw() {
     }
     
     // Projektil entfernen, wenn es eine Grenze, eine Wand, den Spieler oder einen Gegner trifft
-    if (projectile.isOutsideWorld(world) || projectile.hasHitWall(world) || hitPlayer || hitAnEnemy || projectile.hasHitCrate(world, player)) {
+    if (projectile.isOutsideWorld(world) || projectile.hasHitWall(world) || projectile.hasHitCrate(world, player) || hitAnEnemy || hitPlayer || projectile.hasHitCarriedEnemy(player)) {
       world.projectiles.remove(i);
     }
   }
   
   renderer.drawGrid(world, tile_size);
+  
+  popMatrix();
+  noClip();
+  
+  renderer.drawControls(EventListener, player);
 }
 
 // Prüft, ob sich ein Gegner auf einem Portal befindet.
@@ -289,13 +366,57 @@ void updateCrateTeleportation(){
   }
 }
 
-void restartGame(){
- if(player != null){
-  player.resetHealth(); 
- }
- 
- world.projectiles.clear();
- gameOver = false;
+void restartGame() {
+  LevelLoader loader = new LevelLoader();
+  World newWorld = loader.loadLevel(
+    "data/map/observation_cells.csv",
+    EventListener
+  );
+
+  // Nur neu starten, wenn das Level erfolgreich geladen wurde.
+  if (newWorld == null) {
+    println("Neustart fehlgeschlagen: Level konnte nicht geladen werden.");
+    return;
+  }
+
+  world = newWorld;
+  player = null;
+  target = null;
+
+  // Spieler im neu geladenen Level suchen.
+  for (WorldObject obj : world.world_objects) {
+    if (obj.type == WorldTypes.PLAYER) {
+      player = (Player) obj;
+      break;
+    }
+  }
+
+  // Target für den neuen Spieler erstellen.
+  if (player != null) {
+    target = new Target(player.grid_x, player.grid_y, EventListener);
+    world.registerObject(target, target.grid_x, target.grid_y);
+  } else {
+    println("Neustart fehlgeschlagen: Kein Spieler im Level gefunden.");
+    return;
+  }
+
+  // Portal-Modus und Eingabeanforderungen zurücksetzen.
+  EventListener.portal_mode = false;
+  EventListener.selectedPortalType = null;
+  EventListener.placePortalRequested = false;
+  EventListener.cancelPortalRequested = false;
+  EventListener.keyInteract = false;
+
+  EventListener.keyUp = false;
+  EventListener.keyDown = false;
+  EventListener.keyLeft = false;
+  EventListener.keyRight = false;
+  EventListener.keyFaceUp = false;
+  EventListener.keyFaceDown = false;
+  EventListener.keyFaceLeft = false;
+  EventListener.keyFaceRight = false;
+
+  gameOver = false;
 }
 
 void keyPressed(){
