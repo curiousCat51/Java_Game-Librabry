@@ -14,6 +14,10 @@ class Player extends Sprite {
   // Zeit für das wiederherstellen von Trefferpunkten
   int healStartTime = 0;
   int healDelay = 2;
+  
+  int animationFrame = 1;
+  int animationLastUpdate = 0;
+  int animationInterval = 120; // Millisekunden pro Frame
 
   Player(int grid_x, int grid_y, KeyHandler EventListener) {
     super(WorldTypes.PLAYER, grid_x, grid_y);
@@ -116,8 +120,7 @@ class Player extends Sprite {
   }
   
   // Fügt dem Spieler Schaden zu
-  @Override
-  void takeDamage(int damage) {
+  @Override void takeDamage(int damage) {
     super.takeDamage(damage);
     println("Lebenspunkte: " + health);
   }

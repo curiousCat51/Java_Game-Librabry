@@ -14,13 +14,32 @@ class GridCell{
  }
  
  // Überprüft ob eine bestimmte Gridzelle eine Wand enthält
- boolean containsWall(){
+ boolean containsWall(){   
   for(WorldObject object : objects){
-   if(object.type == WorldTypes.WALL){
+   if(object instanceof Wall){
+     Wall wall = (Wall)object;
+     
+     if(!wall.blockTarget && EventListener.portal_mode){
+      return false; 
+     }
     return true; 
    }
   }
   return false;
+ }
+ 
+ // Prüft, ob in einer bestimmten GridZelle ein Gitter liegt
+ boolean containsGitter(){
+   for(WorldObject object : objects){
+    if(object instanceof Wall){
+     Wall wall = (Wall) object;
+     
+     if(!wall.blockTarget){
+      return true; 
+     }
+    }
+   }
+   return false;
  }
  
  // Prüft, ob eine bestimmte Gridzelle eine Tür enthält

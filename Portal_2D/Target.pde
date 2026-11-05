@@ -98,6 +98,9 @@ class Target extends Sprite{
     world.moveObject(this, grid_x, grid_y, newX, newY);
     
     nextMoveTime = millis() + repeatDelay;
+    
+    displayGridX = grid_x;
+    displayGridY = grid_y;
   }
   
   // Lässt das Target an die Spieler Position zurückkehren, sobald der Portal-Modus endet
@@ -112,6 +115,9 @@ class Target extends Sprite{
   
     wishX = 0;
     wishY = 0;
+    
+    displayGridX = grid_x;
+    displayGridY = grid_y;
   }
   
   // Prüft welche Felder das Target erreichen kann

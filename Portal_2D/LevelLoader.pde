@@ -32,7 +32,7 @@ class LevelLoader{
       // Beginn des Objektabschnitts erkennen
       if (Key.equals("object_type")) {
       
-        if (values.length != 8) {
+        if (values.length != 9) {
           println("Fehler: Ungültige Objekt-Kopfzeile.");
           return null;
         }
@@ -84,7 +84,7 @@ class LevelLoader{
   
       String[] values = split(line, ',');
   
-      if (values.length != 8) {
+      if (values.length != 9) {
         println("Fehler: Ungültige Anzahl an Feldern in Zeile " + (i + 1));
         return null;
       }
@@ -107,6 +107,7 @@ class LevelLoader{
       String shootDirection = trim(values[5]);
       String orientation = trim(values[6]);
       String linkId = trim(values[7]);
+      String id = trim(values[8]);
   
       // Pflichtfelder überprüfen
       if (isNullValue(objectType) || isNullValue(gridXValue) || isNullValue(gridYValue)) {
@@ -137,7 +138,7 @@ class LevelLoader{
       
       if (objectType.equals("WALL")) {
       
-        Wall wall = createWall(gridX, gridY, subType, orientation);
+        Wall wall = createWall(gridX, gridY, subType, moveDirection, orientation, id);
       
         if (wall == null) {
           return null;
@@ -174,6 +175,7 @@ class LevelLoader{
         }
       
         int doorLinkId;
+        Orientation orient = parseOrientation(orientation);
       
         try {
           doorLinkId = Integer.parseInt(linkId);
@@ -183,7 +185,7 @@ class LevelLoader{
           return null;
         }
       
-        Door door = new Door(gridX, gridY, doorLinkId);
+        Door door = new Door(gridX, gridY, orient, doorLinkId);
         newWorld.registerObject(door, gridX, gridY);
       }
       
@@ -220,7 +222,7 @@ class LevelLoader{
         return null;
       }
   
-      println("Objekt: " + objectType + " | Untertyp: " + subType + " | X: " + gridX + " | Y: " + gridY + " | Bewegung: " + moveDirection + " | Schuss: " + shootDirection + " | Ausrichtung: " + orientation);
+      println("Objekt: " + objectType + " | Untertyp: " + subType + " | X: " + gridX + " | Y: " + gridY + " | Bewegung: " + moveDirection + " | Schuss: " + shootDirection + " | Ausrichtung: " + orientation + " | ID: " + id);
     }
   
     println("Levelgröße eingelesen: " + rows + " Zeilen, " + cols + " Spalten.");
@@ -313,17 +315,46 @@ class LevelLoader{
     }
   }
   
-  Wall createWall(int gridX, int gridY, String subType, String orientationValue) {
+  Wall createWall(int gridX, int gridY, String subType, String moveDirection, String orientationValue, String ID) {
   
     WallType wallType = parseWallType(subType);
     Orientation orientation = parseOrientation(orientationValue);
+    Direction direction = parseMoveDirection(moveDirection);
+    int id = parseToInt(ID);
   
-    if (wallType == null || orientation == null) {
+    if (wallType == null) {
       println("Fehler: Ungültige Wand-Eigenschaften.");
       return null;
     }
   
-    return new Wall(gridX, gridY, wallType, orientation);
+    return new Wall(gridX, gridY, wallType, direction, orientation, id);
+  }
+  
+  Direction parseMoveDirection(String value){
+   
+    if(isNullValue(value)){
+     return null; 
+    }
+    
+    try{
+     return Direction.valueOf(trim(value).toUpperCase()); 
+    }
+    catch(IllegalArgumentException e){
+     return null; 
+    }
+  }
+  
+  int parseToInt(String value){
+   if(isNullValue(value)){
+    return 0; 
+   }
+   
+   try{
+    return int(value); 
+   }
+   catch(IllegalArgumentException e){
+    return 0; 
+   }
   }
   
   Player createPlayer(int gridX, int gridY, KeyHandler eventListener){

@@ -5,7 +5,7 @@ class WorldRenderer {
   }
   
   // Zeichnet das Grid und die Objekte aus den einzelnen Zellen
-  void drawGrid(World world, int tileSize) {
+  void drawGrid(World world, int tileSize, ImageManager imageManager) {
     stroke(160);
     noFill();
 
@@ -154,79 +154,213 @@ class WorldRenderer {
       
       switch(object.type){
         case PLAYER: {
-          fill(#000000);
+          Player Psprite = (Player) object;
           
-          float pixelX = (renderGridX + 0.5) * tileSize;
-          float pixelY = (renderGridY + 0.5) * tileSize;
-    
-          ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
+          String direction = "down";
+          
+          if(Psprite.facingX == 1){
+           direction = "right"; 
+          }
+          else if(Psprite.facingX == -1){
+           direction = "left"; 
+          }
+          else if(Psprite.facingY == -1){
+           direction = "up"; 
+          }
+          
+          int now = millis();
+          
+          if(Psprite.isMoving()){
+           if(now - Psprite.animationLastUpdate >= Psprite.animationInterval){
+            Psprite.animationFrame++;
+            
+            if(Psprite.animationFrame > 4){
+             
+              Psprite.animationFrame = 1;
+            }
+            
+            Psprite.animationLastUpdate = now;
+           }
+           else{
+            Psprite.animationFrame = 1;
+            Psprite.animationLastUpdate = now;
+           }
+          }
+          
+          String imagePath = "images/player/" + direction + "/" + Psprite.animationFrame + ".bmp";
+          
+          PImage playerImage = imageManager.getImage(imagePath);
+          
+          if(playerImage != null){
+           float pixelX = renderGridX * tileSize;
+           float pixelY = renderGridY * tileSize;
+           
+           image(playerImage, pixelX, pixelY, tileSize, tileSize);
+          }
         } 
         
         break;
         
         case ENEMY: {
-          fill(220, 50, 50);
           
-          float pixelX = (renderGridX + 0.5) * tile_size;
-          float pixelY = (renderGridY + 0.5) * tile_size;
+          Enemy enemy = (Enemy) object;
           
-          ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
+          String imagePath = "images/enemy/";
+          
+          if(enemy.shootDirectionX == 0){
+            if(enemy.shootDirectionY == -1){
+             imagePath += "up/up.bmp";  
+            }
+            else{
+             imagePath += "down/down.bmp"; 
+            }
+          }
+          else if(enemy.shootDirectionY == 0){
+           if(enemy.shootDirectionX == -1){
+            imagePath += "left/left.bmp"; 
+           }
+           else{
+            imagePath += "right/right.bmp"; 
+           }
+          }
+          else{
+           imagePath += "down/down.bmp"; 
+          }
+          
+          float pixelX = renderGridX * tile_size;
+          float pixelY = renderGridY * tile_size;
+          
+          PImage enemyImage = imageManager.getImage(imagePath);
+          
+          if(enemyImage != null){
+           image(enemyImage, pixelX, pixelY, tileSize, tileSize); 
+          }
         }
         
         break;
       
         case TARGET: {
+          String imagePath = "images/target/";
+          
           if(EventListener.portal_mode){
             if(EventListener.selectedPortalType == WorldTypes.PORTAL_A){
-              fill(#FC8726);
+              imagePath = imagePath + "orange.bmp";
+              
+              PImage targetImage = imageManager.getImage(imagePath);
+          
+              if(targetImage != null){
+               float pixelX = renderGridX * tileSize;
+               float pixelY = renderGridY * tileSize;
+               
+               image(targetImage, pixelX, pixelY, tileSize, tileSize);
+              }
             }
             else if(EventListener.selectedPortalType == WorldTypes.PORTAL_B){
-             fill(#0DC6FC); 
+             imagePath = imagePath + "blue.bmp";
+             
+             PImage targetImage = imageManager.getImage(imagePath);
+          
+              if(targetImage != null){
+               float pixelX = renderGridX * tileSize;
+               float pixelY = renderGridY * tileSize;
+               
+               image(targetImage, pixelX, pixelY, tileSize, tileSize);
+              }
             }
             else{
              fill(0, 100, 255); 
+             
+             float pixelX = (object.grid_x + 0.5f) * tile_size;
+             float pixelY = (object.grid_y + 0.5f) * tile_size;
+              
+             ellipse(pixelX, pixelY, tile_size * 0.4f, tile_size * 0.4f);
+             
+             break;
             }
-            
-            float pixelX = (object.grid_x + 0.5f) * tile_size;
-            float pixelY = (object.grid_y + 0.5f) * tile_size;
-            
-            ellipse(pixelX, pixelY, tile_size * 0.4f, tile_size * 0.4f);
-          }
+           }
         }
         
         break;
         
         case PORTAL_A: {
-          fill(#FC8726);
           
-          float pixelX = (renderGridX + 0.5) * tileSize;
-          float pixelY = (renderGridY + 0.5) * tileSize;
-    
-          ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
+          String imagePath = "images/portal/orange.bmp";
+          
+          PImage portalImage = imageManager.getImage(imagePath);
+          
+          if(portalImage != null){
+           float pixelX = renderGridX * tileSize;
+           float pixelY = renderGridY * tileSize;
+           
+           image(portalImage, pixelX, pixelY, tileSize, tileSize);
+          }
         }
         
         break;
         
         case PORTAL_B: {
-          fill(#0DC6FC);
+          String imagePath = "images/portal/blue.bmp";
           
-          float pixelX = (renderGridX + 0.5) * tileSize;
-          float pixelY = (renderGridY + 0.5) * tileSize;
-    
-          ellipse(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
+          PImage portalImage = imageManager.getImage(imagePath);
+          
+          if(portalImage != null){
+           float pixelX = renderGridX * tileSize;
+           float pixelY = renderGridY * tileSize;
+           
+           image(portalImage, pixelX, pixelY, tileSize, tileSize);
+          }
         }
         
         break;
         
         case WALL: {
-          fill(#939393);
           
-          float pixelX = (renderGridX + 0.5) * tileSize;
-          float pixelY = (renderGridY + 0.5) * tileSize;
-    
-          rectMode(CENTER);
-          rect(pixelX, pixelY, tileSize * 0.7, tileSize * 0.7);
-          rectMode(CORNER);
+          Wall wall = (Wall) object;
+          
+          String imagePath = "images/wall";
+          
+          float pixelX = renderGridX * tileSize;
+          float pixelY = renderGridY * tileSize;
+          
+          if(wall.wallType == WallType.GITTER){
+            imagePath += "/bar";
+          }
+          else if(wall.wallType == WallType.VERBINDUNG){
+            imagePath += "/connection";
+          }
+          else if(wall.wallType == WallType.ECKE){
+            imagePath += "/corner";
+          }
+          else if(wall.wallType == WallType.ENDE){
+            imagePath += "/end";
+          }
+          else if(wall.wallType == WallType.GERADE){
+            imagePath += "/straight";
+          }
+          else{
+            imagePath += "/cross.bmp";
+          }
+          
+          if(wall.wallType != WallType.GERADE && wall.orientation != Orientation.SENKRECHT && wall.orientation !=  Orientation.WAAGERECHT){
+            if(wall.wallType != WallType.KREUZ){
+             imagePath += "/" + wall.id + ".bmp"; 
+            }
+          }
+          else{
+           if(wall.orientation ==  Orientation.WAAGERECHT){
+             imagePath += "/1.bmp";
+           }
+           else{
+            imagePath += "/2.bmp"; 
+           }
+          }
+          
+          
+          PImage wallImage = imageManager.getImage(imagePath);
+          
+          if(wallImage != null){
+            image(wallImage, pixelX, pixelY, tileSize, tileSize);
+          }
         }
         
         break;
@@ -234,67 +368,74 @@ class WorldRenderer {
         case DOOR: {
           
           Door door = (Door) object;
+          
+          String imagePath = "images/door/";
         
-          float pixelX = (renderGridX + 0.5f) * tileSize;
-          float pixelY = (renderGridY + 0.5f) * tileSize;
-        
-          rectMode(CENTER);
+          float pixelX = renderGridX * tileSize;
+          float pixelY = renderGridY * tileSize;
+          
+          if(door.orientation == Orientation.SENKRECHT){
+           imagePath += "vertical/"; 
+          }
+          else{
+           imagePath += "horizontal/"; 
+          }
         
           if (door.open) {
             // Geöffnete Tür: grüner Rahmen
-            noFill();
-            stroke(0, 180, 0);
-            strokeWeight(3);
-            rect(pixelX, pixelY, tileSize * 0.8f, tileSize * 0.8f);
+            
+            imagePath += "open.bmp";
           } else {
             // Geschlossene Tür: braune Fläche
-            noStroke();
-            fill(130, 75, 35);
-            rect(pixelX, pixelY, tileSize * 0.8f, tileSize * 0.8f);
+            
+            imagePath += "closed.bmp";
           }
-        
-          rectMode(CORNER);
-          strokeWeight(1);
+          
+          PImage doorImage = imageManager.getImage(imagePath);
+          
+          if(doorImage != null){
+           
+           image(doorImage, pixelX, pixelY, tileSize, tileSize);
+          }
         }
         
         break;
         
         case BUTTON: {
           Button button = (Button) object;
+          
+          String imagePath = "images/button/";
         
-          float pixelX = (renderGridX + 0.5f) * tileSize;
-          float pixelY = (renderGridY + 0.5f) * tileSize;
+          float pixelX = renderGridX * tileSize;
+          float pixelY = renderGridY * tileSize;
         
           if (button.active) {
-            fill(0, 220, 0);
+            imagePath += "pressed.bmp";
           } else {
-            fill(120, 120, 120);
+            imagePath += "released.bmp";
           }
         
-          noStroke();
-          ellipse(pixelX, pixelY, tileSize * 0.45f, tileSize * 0.45f);
+          PImage buttonImage = imageManager.getImage(imagePath);
+          
+          if(buttonImage != null){
+           image(buttonImage, pixelX, pixelY, tileSize, tileSize); 
+          }
         }
         
         break;
         
         case CRATE:{
           
-          rectMode(CENTER);
-         
-          float pixelX = (renderGridX + 0.5f) * tileSize;
-          float pixelY = (renderGridY + 0.5f) * tileSize;
+          String imagePath = "images/crate/crate.bmp";
           
-          fill(76, 47, 38);
-          rect(pixelX, pixelY, tileSize * 0.5f, tileSize * 0.5f);
+          PImage crateImage = imageManager.getImage(imagePath);
           
-          stroke(0);
-          strokeWeight(3);
-          rect(pixelX, pixelY, tileSize * 0.5f, tileSize * 0.5f);
-          line(pixelX - tileSize * 0.2f, pixelY + tileSize * 0.2f, pixelX + tileSize * 0.2f, pixelY - tileSize * 0.2f);
-          line(pixelX - tileSize * 0.2f, pixelY - tileSize * 0.2f, pixelX + tileSize * 0.2f, pixelY + tileSize * 0.2f);
-          noStroke();
-          rectMode(CORNER);
-          strokeWeight(3);
+          float pixelX = renderGridX * tileSize;
+          float pixelY = renderGridY * tileSize;
+          
+          if(crateImage != null){
+           image(crateImage, pixelX, pixelY, tileSize, tileSize); 
+          }
         }
       }
     }
@@ -308,32 +449,52 @@ class WorldRenderer {
       float pixelY = (renderGridY + 0.5f) * tileSize;
       float carriedSize = tileSize * 0.45f;
 
-      fill(220, 50, 50);
-      noStroke();
-      ellipse(pixelX, pixelY, carriedSize, carriedSize);
+      Enemy enemy = (Enemy) player.carriedObject;
+          
+          String imagePath = "images/enemy/";
+          
+          if(enemy.shootDirectionX == 0){
+            if(enemy.shootDirectionY == -1){
+             imagePath += "up/up.bmp";  
+            }
+            else{
+             imagePath += "down/down.bmp"; 
+            }
+          }
+          else if(enemy.shootDirectionY == 0){
+           if(enemy.shootDirectionX == -1){
+            imagePath += "left/left.bmp"; 
+           }
+           else{
+            imagePath += "right/right.bmp"; 
+           }
+          }
+          else{
+           imagePath += "down/down.bmp"; 
+          }
+          
+          PImage enemyImage = imageManager.getImage(imagePath);
+          
+          if(enemyImage != null){
+           image(enemyImage, pixelX, pixelY, carriedSize, carriedSize); 
+          }
     }
     else if(player != null && player.carriedObject instanceof Crate){
       
       float renderGridX = player.displayGridX + player.facingX;
       float renderGridY = player.displayGridY + player.facingY;
-      
-      rectMode(CENTER);
          
       float pixelX = (renderGridX + 0.5f) * tileSize;
       float pixelY = (renderGridY + 0.5f) * tileSize;
       float carriedSize = tileSize * 0.45f;
       
-      fill(76, 47, 38);
-      rect(pixelX, pixelY, carriedSize * 0.5f, carriedSize * 0.5f);
+      String imagePath = "images/crate/crate.bmp";
       
-      stroke(0);
-      strokeWeight(3);
-      rect(pixelX, pixelY, carriedSize * 0.5f, carriedSize * 0.5f);
-      line(pixelX - carriedSize * 0.2f, pixelY + carriedSize * 0.2f, pixelX + carriedSize * 0.2f, pixelY - carriedSize * 0.2f);
-      line(pixelX - carriedSize * 0.2f, pixelY - carriedSize * 0.2f, pixelX + carriedSize * 0.2f, pixelY + carriedSize * 0.2f);
-      noStroke();
-      rectMode(CORNER);
-      strokeWeight(3);
+      PImage crateImage = imageManager.getImage(imagePath);
+      
+      if(crateImage != null){
+       image(crateImage, pixelX, pixelY, carriedSize, carriedSize); 
+      }
     }
   }
   

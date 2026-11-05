@@ -19,9 +19,10 @@ import java.util.*;
 // - Neustart anpassen <- fertig
 // - Kamera <- fertig
 // 05.11.2026
-// Gitter einfügen
-// - Bilder einbinden
-// - Maps erstellen
+// - Gitter Funktionen einfügen <- fertig
+// - Bilder einbinden <- fertig
+// 06.11.2026
+// - Maps erstellen <- dran
 // - Code aufräumen
 
 World world;
@@ -29,6 +30,7 @@ Player player;
 Target target;
 WorldRenderer renderer;
 KeyHandler EventListener;
+ImageManager imageManager;
 
 int tile_size = 32;
 int target_distance = 4;
@@ -44,6 +46,7 @@ void setup(){
  
  renderer = new WorldRenderer();
  EventListener = new KeyHandler();
+ imageManager = new ImageManager();
  
     LevelLoader loader = new LevelLoader();
     // world = loader.loadLevel("data/map/level_test.csv", EventListener);
@@ -76,6 +79,11 @@ void setup(){
     } else {
       println("Fehler: Kein Player gefunden.");
     }
+    
+    PImage testImage = imageManager.getImage("images/portal/orange.bmp");
+    
+    println("Bild geladen: " + (testImage != null));
+    println("Geladene Bilder: " + imageManager.getLoadedImageCount());
 }
 
 void updateCamera() {
@@ -102,7 +110,7 @@ void updateCamera() {
 
 
 void draw() {
-  background(200);
+  background(50);
   
   if (!EventListener.portal_mode && player != null && target != null) {
     target.resetToPlayer(player);
@@ -239,18 +247,26 @@ void draw() {
  
   // Ausgewähltes Portal platzieren
  if(EventListener.portal_mode && EventListener.placePortalRequested && EventListener.selectedPortalType != null && target != null && world != null){
-   // Es darf kein Portal platziert werden, wenn das Target sich innerhalb einer Barriere oder auf einer Tür befindet
-   if(!world.isBarrierAt(target.grid_x, target.grid_y) && !world.isDoorAt(target.grid_x, target.grid_y)){
-     world.placePortal(EventListener.selectedPortalType, target.grid_x, target.grid_y);
-     
-     EventListener.placePortalRequested = false;
-     EventListener.portal_mode = false;
-     EventListener.selectedPortalType = null;
-   }
-   else{
-    EventListener.cancelPortalRequested = true; 
-   }
- }
+
+  println("Äußerer If-Block erreicht");
+  println("Barrier: " + world.isBarrierAt(target.grid_x, target.grid_y));
+  println("Door: " + world.isDoorAt(target.grid_x, target.grid_y));
+  println("Gitter: " + world.isGitterAt(target.grid_x, target.grid_y));
+
+  if(!world.isBarrierAt(target.grid_x, target.grid_y) && !world.isDoorAt(target.grid_x, target.grid_y) && !world.isGitterAt(target.grid_x, target.grid_y)){
+
+    println("Innere If-Bedingung erfüllt");
+    world.placePortal(EventListener.selectedPortalType, target.grid_x, target.grid_y);
+
+    EventListener.placePortalRequested = false;
+    EventListener.portal_mode = false;
+    EventListener.selectedPortalType = null;
+  }
+  else{
+    println("Platzierung blockiert");
+    EventListener.cancelPortalRequested = true;
+  }
+}
  
  if(EventListener.portal_mode && target != null && player != null){
    renderer.drawRangeCells(target, player, world, tile_size);
@@ -326,7 +342,7 @@ void draw() {
     }
   }
   
-  renderer.drawGrid(world, tile_size);
+  renderer.drawGrid(world, tile_size, imageManager);
   
   popMatrix();
   noClip();

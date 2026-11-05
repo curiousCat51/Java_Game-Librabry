@@ -51,6 +51,15 @@ class World {
    return grid[y][x].containsWall();
   }
   
+  // Überprüft, ob sich an einer Position ein Gitter befindet
+  boolean isGitterAt(int x, int y){
+   if(!isInsideGrid(x, y)){
+    return true; 
+   }
+   
+   return grid[y][x].containsGitter();
+  }
+  
   // Überprüft, ob sich eine geschlossene Tür an einer Stelle befindet
   boolean isClosedDoorAt(int x, int y){
     if(!isInsideGrid(x, y)){
@@ -243,6 +252,8 @@ class World {
     // Neues Portal an der gewünschetn Position regristrieren.
     Portal portal = new Portal(type, col, row);
     registerObject(portal, col, row);
+    
+    println("Portal platziert: " + type + " bei (" + col + ", " + row + ")");
   }
   
   // Teleportiert ein Projektil beim Betreten eines Portals.
@@ -375,7 +386,7 @@ class World {
           }
         }
   
-        if (!matchingButtonFound) {
+        if (!matchingButtonFound && door.link_id != 0) {
           println("Fehler: Kein passender Button für Tür mit link_id " + door.link_id);
           return false;
         }
@@ -454,11 +465,7 @@ class World {
       int newX = door.grid_x + direction[0];
       int newY = door.grid_y + direction[1];
   
-      if (!isInsideGrid(newX, newY) ||
-          isWallAt(newX, newY) ||
-          isBarrierAt(newX, newY) ||
-          isClosedDoorAt(newX, newY) ||
-          isDoorAt(newX, newY)) {
+      if (!isInsideGrid(newX, newY) || isWallAt(newX, newY) || isBarrierAt(newX, newY) || isClosedDoorAt(newX, newY) || isDoorAt(newX, newY)) {
         continue;
       }
   
