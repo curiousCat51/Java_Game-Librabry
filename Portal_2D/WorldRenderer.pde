@@ -440,6 +440,7 @@ class WorldRenderer {
       }
     }
     
+    imageMode(CENTER);
         // Getragenes Objekt kleiner vor dem Spieler zeichnen
     if (player != null && player.carriedObject instanceof Enemy) {
       float renderGridX = player.displayGridX + player.facingX;
@@ -496,6 +497,8 @@ class WorldRenderer {
        image(crateImage, pixelX, pixelY, carriedSize, carriedSize); 
       }
     }
+    
+    imageMode(CORNER);
   }
   
   // Zeichnet die erreichbaren Felder für das Target

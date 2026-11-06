@@ -32,7 +32,7 @@ class LevelLoader{
       // Beginn des Objektabschnitts erkennen
       if (Key.equals("object_type")) {
       
-        if (values.length != 9) {
+        if (values.length != 10) {
           println("Fehler: Ungültige Objekt-Kopfzeile.");
           return null;
         }
@@ -84,7 +84,7 @@ class LevelLoader{
   
       String[] values = split(line, ',');
   
-      if (values.length != 9) {
+      if (values.length != 10) {
         println("Fehler: Ungültige Anzahl an Feldern in Zeile " + (i + 1));
         return null;
       }
@@ -108,6 +108,7 @@ class LevelLoader{
       String orientation = trim(values[6]);
       String linkId = trim(values[7]);
       String id = trim(values[8]);
+      String connection_count = trim(values[9]);
   
       // Pflichtfelder überprüfen
       if (isNullValue(objectType) || isNullValue(gridXValue) || isNullValue(gridYValue)) {
@@ -176,6 +177,7 @@ class LevelLoader{
       
         int doorLinkId;
         Orientation orient = parseOrientation(orientation);
+        int link_count;
       
         try {
           doorLinkId = Integer.parseInt(linkId);
@@ -184,8 +186,21 @@ class LevelLoader{
           println("Fehler: Ungültige link_id für Tür in Zeile " + (i + 1));
           return null;
         }
+        
+        if(isNullValue(connection_count)){
+          link_count = 0;
+        }
+        else{
+          try{
+           link_count = Integer.parseInt(connection_count);
+          }
+          catch(NumberFormatException e){
+           println("Fehler: Ungültiger link_count für Tür in Zeile " + (i + 1));
+           return null;
+          } 
+        }
       
-        Door door = new Door(gridX, gridY, orient, doorLinkId);
+        Door door = new Door(gridX, gridY, orient, doorLinkId, link_count);
         newWorld.registerObject(door, gridX, gridY);
       }
       

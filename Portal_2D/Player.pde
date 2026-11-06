@@ -21,7 +21,7 @@ class Player extends Sprite {
 
   Player(int grid_x, int grid_y, KeyHandler EventListener) {
     super(WorldTypes.PLAYER, grid_x, grid_y);
-    // this.health = 1;
+    this.health = 1;
     this.EventListener = EventListener;
   }
   

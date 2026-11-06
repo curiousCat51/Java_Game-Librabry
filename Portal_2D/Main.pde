@@ -22,8 +22,20 @@ import java.util.*;
 // - Gitter Funktionen einfügen <- fertig
 // - Bilder einbinden <- fertig
 // 06.11.2026
+// - Türen mit zwei oder mehr Buttons
+// - Funktionen aus der Main auslagern
+// - Hirachie verändern (einzelne Gegner Klassen)
+// - Menü, Startbildschirm
 // - Maps erstellen <- dran
 // - Code aufräumen
+
+
+// Plan für neu aufbau von Portal 2D:
+// - Neuer Maploader
+// - Neues Object identifikations system
+// - Index speicherung
+// - komprimieren von code in Main.pde
+// - Verbesserte Hirachie 
 
 World world;
 Player player;
@@ -79,11 +91,6 @@ void setup(){
     } else {
       println("Fehler: Kein Player gefunden.");
     }
-    
-    PImage testImage = imageManager.getImage("images/portal/orange.bmp");
-    
-    println("Bild geladen: " + (testImage != null));
-    println("Geladene Bilder: " + imageManager.getLoadedImageCount());
 }
 
 void updateCamera() {
@@ -248,14 +255,7 @@ void draw() {
   // Ausgewähltes Portal platzieren
  if(EventListener.portal_mode && EventListener.placePortalRequested && EventListener.selectedPortalType != null && target != null && world != null){
 
-  println("Äußerer If-Block erreicht");
-  println("Barrier: " + world.isBarrierAt(target.grid_x, target.grid_y));
-  println("Door: " + world.isDoorAt(target.grid_x, target.grid_y));
-  println("Gitter: " + world.isGitterAt(target.grid_x, target.grid_y));
-
   if(!world.isBarrierAt(target.grid_x, target.grid_y) && !world.isDoorAt(target.grid_x, target.grid_y) && !world.isGitterAt(target.grid_x, target.grid_y)){
-
-    println("Innere If-Bedingung erfüllt");
     world.placePortal(EventListener.selectedPortalType, target.grid_x, target.grid_y);
 
     EventListener.placePortalRequested = false;
@@ -263,7 +263,6 @@ void draw() {
     EventListener.selectedPortalType = null;
   }
   else{
-    println("Platzierung blockiert");
     EventListener.cancelPortalRequested = true;
   }
 }

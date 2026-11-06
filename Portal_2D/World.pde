@@ -252,8 +252,6 @@ class World {
     // Neues Portal an der gewünschetn Position regristrieren.
     Portal portal = new Portal(type, col, row);
     registerObject(portal, col, row);
-    
-    println("Portal platziert: " + type + " bei (" + col + ", " + row + ")");
   }
   
   // Teleportiert ein Projektil beim Betreten eines Portals.
@@ -324,49 +322,34 @@ class World {
       if (obj.type == WorldTypes.BUTTON) {
   
         Button button = (Button) obj;
-        Door matchingDoor = null;
-        int buttonCount = 0;
+        
+        ArrayList<Door> matchingDoors = new ArrayList<Door>();
   
         for (WorldObject other : world_objects) {
-  
-          if (other.type == WorldTypes.BUTTON) {
-            Button otherButton = (Button) other;
-  
-            if (otherButton.link_id == button.link_id) {
-              buttonCount++;
-            }
-          }
   
           if (other.type == WorldTypes.DOOR) {
             Door door = (Door) other;
   
             if (door.link_id == button.link_id) {
   
-              if (matchingDoor != null) {
-                println("Fehler: Mehrere Türen mit link_id " + button.link_id);
-                return false;
-              }
-  
-              matchingDoor = door;
+              matchingDoors.add(door);
             }
           }
         }
-  
-        if (buttonCount > 1) {
-          println("Fehler: Mehrere Buttons mit link_id " + button.link_id);
-          return false;
-        }
-  
-        if (matchingDoor == null) {
+        
+       
+        if (matchingDoors.size() == 0) {
           println("Fehler: Keine passende Tür für Button mit link_id " + button.link_id);
           return false;
         }
   
-        button.linkedDoor = matchingDoor;
+        for(Door door : matchingDoors){
+          button.linkedDoors.add(door);
+        }
       }
     }
   
-    // Prüfen, ob jede Tür einen passenden Button besitzt
+    // Prüfen, ob jede Tür mindestens einen passenden Button besitzt
     for (WorldObject obj : world_objects) {
   
       if (obj.type == WorldTypes.DOOR) {
@@ -396,6 +379,7 @@ class World {
     return true;
   }
   
+  // Updatet die Zustände aller Buttons
   void updateButtons() {
     
     for (WorldObject object : world_objects) {
@@ -407,6 +391,7 @@ class World {
       Button button = (Button) object;
       boolean occupied = false;
   
+      // Prüft, ob ein Objekt auf dem Button steht. Und wenn ja, ob dieses Objekt den Button auslösen kann
       for (WorldObject other : world_objects) {
   
         if (other == button || !other.canActivateButton()) {
@@ -420,36 +405,52 @@ class World {
       }
     
       button.active = occupied;
-
-      if (occupied) {
-        button.linkedDoor.open = true;
-      } else if (button.linkedDoor.open) {
-        // Erst schließen, wenn der Spieler sicher von der Tür weg ist.
-        if (pushPlayerOffDoor(button.linkedDoor)) {
-          button.linkedDoor.open = false;
+      
+      for(Door door : button.linkedDoors){
+        if (occupied) {
+          door.activateLink(button);
+        } 
+        else if (door.open) {
+          // Erst schließen, wenn sich kein Objekt in der Tür befindet.
+          if (pushSpriteOffDoor(door) && !isCrateAt(door.grid_x, door.grid_y)) {
+            door.deactivateLink(button);
+          }
         }
+        
+        door.updateDoor();
       }
+
+      
     }
   }
   
   // Verschiebt den Spieler, wenn eine Tür sich schließt
-  boolean pushPlayerOffDoor(Door door) {
+  boolean pushSpriteOffDoor(Door door) {
     Player player = null;
+    Enemy enemy = null;
   
     for (WorldObject object : world_objects) {
       if (object instanceof Player) {
         Player candidate = (Player) object;
   
-        if (candidate.grid_x == door.grid_x &&
-            candidate.grid_y == door.grid_y) {
+        if (candidate.grid_x == door.grid_x && candidate.grid_y == door.grid_y) {
           player = candidate;
           break;
         }
       }
+      
+      if(object instanceof Enemy){
+       Enemy candidate = (Enemy) object;
+       
+       if (candidate.grid_x == door.grid_x && candidate.grid_y == door.grid_y) {
+          enemy = candidate;
+          break;
+       }
+      }
     }
   
     // Kein Spieler auf dieser Tür.
-    if (player == null) {
+    if (player == null && enemy == null) {
       return true;
     }
   
@@ -468,15 +469,24 @@ class World {
       if (!isInsideGrid(newX, newY) || isWallAt(newX, newY) || isBarrierAt(newX, newY) || isClosedDoorAt(newX, newY) || isDoorAt(newX, newY)) {
         continue;
       }
+      
+      Sprite sprite;
+      
+      if(enemy == null){
+       sprite = player; 
+      }
+      else{
+       sprite = enemy; 
+      }
   
       // Sofort umsetzen und eine eventuell laufende Animation abbrechen.
-      moveObject(player, player.grid_x, player.grid_y, newX, newY);
+      moveObject(sprite, sprite.grid_x, sprite.grid_y, newX, newY);
   
-      player.targetGridX = newX;
-      player.targetGridY = newY;
-      player.displayGridX = newX;
-      player.displayGridY = newY;
-      player.moveProgress = 1.0f;
+      sprite.targetGridX = newX;
+      sprite.targetGridY = newY;
+      sprite.displayGridX = newX;
+      sprite.displayGridY = newY;
+      sprite.moveProgress = 1.0f;
   
       return true;
     }
